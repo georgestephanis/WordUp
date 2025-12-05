@@ -19,6 +19,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
         setupStatusItem()
         setupPopover()
         requestNotificationAuthorization()
+        setupURLSchemeHandling()
     }
 
     private func setupStatusItem() {
@@ -50,6 +51,97 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
             }
             // Note: Even if not granted, local notifications might still work on some systems
         }
+    }
+
+    // MARK: - URL Scheme Handling
+
+    private func setupURLSchemeHandling() {
+        // Register for URL scheme events
+        NSAppleEventManager.shared().setEventHandler(
+            self,
+            andSelector: #selector(handleURLEvent(_:withReplyEvent:)),
+            forEventClass: AEEventClass(kInternetEventClass),
+            andEventID: AEEventID(kAEGetURL)
+        )
+    }
+
+    @objc private func handleURLEvent(_ event: NSAppleEventDescriptor, withReplyEvent replyEvent: NSAppleEventDescriptor) {
+        guard let urlString = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue,
+              let url = URL(string: urlString) else {
+            return
+        }
+
+        print("Received URL: \(url.absoluteString)")
+
+        // Handle wordup:// scheme URLs from WordPress authorization
+        if url.scheme == "wordup" {
+            handleAuthorizationCallback(url: url)
+        }
+    }
+
+    private func handleAuthorizationCallback(url: URL) {
+        // Parse the callback URL parameters
+        // Expected format: wordup://auth?site_url=https://example.com&user_login=username&password=app_password
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+
+        guard let queryItems = components?.queryItems else {
+            showAuthError("Invalid authorization response")
+            return
+        }
+
+        var siteURL: String?
+        var userLogin: String?
+        var password: String?
+
+        for item in queryItems {
+            switch item.name {
+            case "site_url":
+                siteURL = item.value
+            case "user_login":
+                userLogin = item.value
+            case "password":
+                password = item.value
+            default:
+                break
+            }
+        }
+
+        guard let siteURL = siteURL, let userLogin = userLogin, let password = password else {
+            showAuthError("Missing required authorization parameters")
+            return
+        }
+
+        // Authenticate with the provided credentials
+        Task {
+            do {
+                try await wordPressService.authenticate(
+                    baseURL: siteURL,
+                    username: userLogin,
+                    password: password
+                )
+
+                await MainActor.run {
+                    showNotification(title: "Authentication Successful", body: "Connected to \(siteURL)")
+                    // Close any open authentication windows
+                    if let window = NSApp.windows.first(where: { $0.title.contains("Authentication") }) {
+                        window.close()
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    showAuthError("Authentication failed: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    private func showAuthError(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = "Authentication Error"
+        alert.informativeText = message
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 
     @objc func togglePopover(_ sender: AnyObject?) {

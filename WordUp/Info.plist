@@ -49,5 +49,16 @@
 	<string>YES</string>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>WordUp uses notifications to inform you about file upload status.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.georgestephanis.WordUp</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>wordup</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

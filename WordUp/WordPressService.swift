@@ -20,6 +20,7 @@ class WordPressService: ObservableObject {
     private var baseURL: URL?
     private var username: String?
     private var token: String?
+    private var authorizationEndpoint: String?
 
     init() {
         loadCredentials()
@@ -39,7 +40,7 @@ class WordPressService: ObservableObject {
         isAuthenticated = token != nil && baseURL != nil && username != nil
     }
 
-    func authenticate(baseURL: String, username: String, password: String) async throws {
+    func startAuthentication(baseURL: String) async throws -> URL {
         // Validate and clean the URL
         var cleanBaseURL = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
         if !cleanBaseURL.hasPrefix("http://") && !cleanBaseURL.hasPrefix("https://") {
@@ -50,9 +51,18 @@ class WordPressService: ObservableObject {
             throw WordPressError.invalidURL
         }
 
-        // Additional validation for local development domains
-        if url.host?.hasSuffix(".local") == true || url.host == "localhost" {
-            print("Attempting to connect to local development domain: \(url.absoluteString)")
+        self.baseURL = url
+
+        // Check if application passwords are supported
+        try await checkApplicationPasswordSupport()
+
+        // Generate authorization URL
+        return try await generateAuthorizationURL()
+    }
+
+    func authenticate(baseURL: String, username: String, password: String) async throws {
+        guard let url = URL(string: baseURL) else {
+            throw WordPressError.invalidURL
         }
 
         self.baseURL = url
@@ -77,6 +87,70 @@ class WordPressService: ObservableObject {
             self.isAuthenticated = true
             self.errorMessage = nil
         }
+    }
+
+    private func checkApplicationPasswordSupport() async throws {
+        guard let baseURL = baseURL else {
+            throw WordPressError.notAuthenticated
+        }
+
+        let apiRootURL = baseURL.appendingPathComponent("wp-json/wp/v2")
+        print("Checking application password support at: \(apiRootURL.absoluteString)")
+
+        var request = URLRequest(url: apiRootURL)
+        request.timeoutInterval = 30
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw WordPressError.networkError("Invalid response type")
+        }
+
+        // Parse the response to check for authentication endpoints
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw WordPressError.networkError("Invalid JSON response")
+        }
+
+        guard let authentication = json["authentication"] as? [String: Any] else {
+            throw WordPressError.networkError("No authentication information found")
+        }
+
+        guard let applicationPasswords = authentication["application-passwords"] as? [String: Any] else {
+            throw WordPressError.networkError("Application passwords not supported on this site")
+        }
+
+        guard let endpoints = applicationPasswords["endpoints"] as? [String: Any],
+              let authorizationURLString = endpoints["authorization"] as? String else {
+            throw WordPressError.networkError("Application password authorization endpoint not found")
+        }
+
+        // Store the authorization endpoint
+        self.authorizationEndpoint = authorizationURLString
+    }
+
+    private func generateAuthorizationURL() throws -> URL {
+        guard let baseURL = baseURL,
+              let authorizationEndpoint = authorizationEndpoint else {
+            throw WordPressError.notAuthenticated
+        }
+
+        let authURL = URL(string: authorizationEndpoint)!
+        var components = URLComponents(url: authURL, resolvingAgainstBaseURL: false)!
+
+        // Generate a unique app ID
+        let appID = UUID().uuidString
+
+        components.queryItems = [
+            URLQueryItem(name: "app_name", value: "WordUp"),
+            URLQueryItem(name: "app_id", value: appID),
+            URLQueryItem(name: "success_url", value: "wordup://auth")
+        ]
+
+        guard let finalURL = components.url else {
+            throw WordPressError.networkError("Failed to generate authorization URL")
+        }
+
+        return finalURL
     }
 
     private func testAuthentication() async throws {

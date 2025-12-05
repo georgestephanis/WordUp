@@ -19,17 +19,19 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 
 ## Setup
 
-1. **Create Application Password in WordPress**:
-   - Go to your WordPress admin dashboard
-   - Navigate to Users → Profile
-   - Scroll down to "Application Passwords"
-   - Create a new application password for "WordUp"
+1. **Ensure Application Passwords are enabled**:
+   - WordPress 5.6+ has Application Passwords built-in
+   - For older versions, install the Application Passwords plugin
 
 2. **Install and Authenticate**:
    - Download and install WordUp.app
    - Click the menu bar icon and select "Authenticate"
-   - Enter your WordPress site URL, username, and application password
-   - Click "Authenticate"
+   - Enter your WordPress site URL (e.g., `https://yoursite.com`)
+   - Click "Connect to WordPress"
+   - Your browser will open to WordPress authorization page
+   - Log in to WordPress (if not already logged in)
+   - Approve the "WordUp" application
+   - You'll be redirected back to complete the setup
 
 ## Usage
 
@@ -48,6 +50,8 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 ## Technical Details
 
 - Built with SwiftUI for macOS
+- Uses WordPress Application Passwords authentication flow
+- Implements custom URL scheme (`wordup://`) for secure callback handling
 - Uses WordPress REST API v2 for uploads
 - Supports common image formats (JPG, PNG, GIF, WebP)
 - Multipart form data uploads for reliable file transfer

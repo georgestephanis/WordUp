@@ -10,10 +10,9 @@ import SwiftUI
 struct AuthenticationView: View {
     @StateObject private var wordPressService = WordPressService()
     @State private var baseURL: String = ""
-    @State private var username: String = ""
-    @State private var password: String = ""
     @State private var isAuthenticating: Bool = false
     @State private var showSuccess: Bool = false
+    @State private var errorMessage: String?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -30,26 +29,10 @@ struct AuthenticationView: View {
                         .textFieldStyle(.roundedBorder)
                         .disabled(isAuthenticating)
                 }
-
-                VStack(alignment: .leading) {
-                    Text("Username")
-                        .font(.headline)
-                    TextField("admin", text: $username)
-                        .textFieldStyle(.roundedBorder)
-                        .disabled(isAuthenticating)
-                }
-
-                VStack(alignment: .leading) {
-                    Text("Application Password")
-                        .font(.headline)
-                    SecureField("Application password", text: $password)
-                        .textFieldStyle(.roundedBorder)
-                        .disabled(isAuthenticating)
-                }
             }
             .padding(.horizontal)
 
-            if let errorMessage = wordPressService.errorMessage {
+            if let errorMessage = errorMessage ?? wordPressService.errorMessage {
                 Text(errorMessage)
                     .foregroundColor(.red)
                     .multilineTextAlignment(.center)
@@ -62,10 +45,10 @@ struct AuthenticationView: View {
                 }
                 .disabled(isAuthenticating)
 
-                Button("Authenticate") {
-                    authenticate()
+                Button("Connect to WordPress") {
+                    startAuthentication()
                 }
-                .disabled(baseURL.isEmpty || username.isEmpty || password.isEmpty || isAuthenticating)
+                .disabled(baseURL.isEmpty || isAuthenticating)
                 .buttonStyle(.borderedProminent)
             }
             .padding(.bottom)
@@ -98,19 +81,28 @@ struct AuthenticationView: View {
         }
     }
 
-    private func authenticate() {
+    private func startAuthentication() {
         isAuthenticating = true
+        errorMessage = nil
 
         Task {
             do {
-                try await wordPressService.authenticate(
-                    baseURL: baseURL,
-                    username: username,
-                    password: password
-                )
+                let authURL = try await wordPressService.startAuthentication(baseURL: baseURL)
+
+                // Open the authorization URL in the default browser
+                await MainActor.run {
+                    NSWorkspace.shared.open(authURL)
+                    self.isAuthenticating = false
+                }
+
+                // Show instructions to the user
+                await MainActor.run {
+                    self.errorMessage = "Authorization page opened in your browser. Please approve the connection in WordPress, and you'll be redirected back to complete the setup."
+                }
+
             } catch {
-                DispatchQueue.main.async {
-                    self.wordPressService.errorMessage = error.localizedDescription
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
                     self.isAuthenticating = false
                 }
             }
