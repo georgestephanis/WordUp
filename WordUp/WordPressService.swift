@@ -106,6 +106,7 @@ class WordPressService: ObservableObject {
 
         var request = URLRequest(url: apiRootURL)
         request.timeoutInterval = 30
+        request.setValue("WordUp/1.0 API Client by George Stephanis", forHTTPHeaderField: "User-Agent")
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -234,6 +235,7 @@ class WordPressService: ObservableObject {
         var request = URLRequest(url: testURL)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("WordUp/1.0 API Client by George Stephanis", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 30 // Increase timeout for local development
 
         do {
@@ -355,6 +357,7 @@ class WordPressService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("WordUp/1.0 API Client by George Stephanis", forHTTPHeaderField: "User-Agent")
 
         var body = Data()
 

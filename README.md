@@ -10,6 +10,7 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 - **Automatic Clipboard**: Uploaded media URLs are automatically copied to clipboard
 - **Local Token Storage**: Securely stores authentication tokens locally
 - **Modern Notifications**: Uses macOS UserNotifications framework for upload status alerts
+- **Custom User-Agent**: Identifies requests with "WordUp/1.0 API Client by George Stephanis"
 
 ## Requirements
 
