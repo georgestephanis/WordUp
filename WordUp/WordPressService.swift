@@ -43,7 +43,11 @@ class WordPressService: ObservableObject {
     func startAuthentication(baseURL: String) async throws -> URL {
         // Validate and clean the URL
         var cleanBaseURL = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !cleanBaseURL.hasPrefix("http://") && !cleanBaseURL.hasPrefix("https://") {
+
+        // Automatically upgrade HTTP to HTTPS for security
+        if cleanBaseURL.hasPrefix("http://") {
+            cleanBaseURL = cleanBaseURL.replacingOccurrences(of: "http://", with: "https://")
+        } else if !cleanBaseURL.hasPrefix("https://") {
             cleanBaseURL = "https://" + cleanBaseURL
         }
 
