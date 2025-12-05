@@ -94,7 +94,7 @@ class WordPressService: ObservableObject {
             throw WordPressError.notAuthenticated
         }
 
-        let apiRootURL = baseURL.appendingPathComponent("wp-json/wp/v2")
+        let apiRootURL = baseURL.appendingPathComponent("wp-json/")
         print("Checking application password support at: \(apiRootURL.absoluteString)")
         print("Base URL: \(baseURL.absoluteString)")
         print("Host: \(baseURL.host ?? "nil")")
