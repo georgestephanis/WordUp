@@ -77,6 +77,11 @@ class WordPressService: ObservableObject {
         let base64Credentials = credentialsData.base64EncodedString()
         self.token = "Basic \(base64Credentials)"
 
+
+        print("Credentials: \(credentials)")
+        print("Credentials data: \(credentialsData)")
+        print("Base64 credentials: \(base64Credentials)")
+
         // Test the authentication
         try await testAuthentication()
 
@@ -225,6 +230,7 @@ class WordPressService: ObservableObject {
         let testURL = baseURL.appendingPathComponent("wp-json/wp/v2/users/me")
         print("Testing authentication with URL: \(testURL.absoluteString)")
 
+        print("Token: \(token)")
         var request = URLRequest(url: testURL)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
