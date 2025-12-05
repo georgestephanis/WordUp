@@ -105,6 +105,36 @@ class WordPressService: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
 
+            // Log the raw response before parsing
+            print("API Response from \(apiRootURL.absoluteString):")
+            print("Data length: \(data.count) bytes")
+            if data.isEmpty {
+                print("Response data is empty")
+            } else {
+                // Try UTF-8 first
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("UTF-8 decoded response:")
+                    print(responseString)
+                } else {
+                    // Try other encodings
+                    let encodings: [String.Encoding] = [.ascii, .isoLatin1, .windowsCP1252]
+                    var decoded = false
+                    for encoding in encodings {
+                        if let responseString = String(data: data, encoding: encoding) {
+                            print("\(encoding) decoded response:")
+                            print(responseString)
+                            decoded = true
+                            break
+                        }
+                    }
+                    if !decoded {
+                        print("Could not decode response data as text. Raw bytes:")
+                        print(data as NSData)
+                    }
+                }
+            }
+            print("--- End Response ---")
+
         guard let httpResponse = response as? HTTPURLResponse else {
             throw WordPressError.networkError("Invalid response type")
         }
@@ -193,6 +223,13 @@ class WordPressService: ObservableObject {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
+
+            // Log the raw response before parsing
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("API Response from \(testURL.absoluteString):")
+                print(responseString)
+                print("--- End Response ---")
+            }
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw WordPressError.networkError("Invalid response type")
@@ -285,6 +322,13 @@ class WordPressService: ObservableObject {
         request.httpBody = body
 
         let (data, response) = try await URLSession.shared.data(for: request)
+
+        // Log the raw response before parsing
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("API Response from \(uploadURL.absoluteString):")
+            print(responseString)
+            print("--- End Response ---")
+        }
 
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
