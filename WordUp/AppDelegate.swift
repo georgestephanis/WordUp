@@ -21,7 +21,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "photo", accessibilityDescription: "WordUp")
+        statusItem.button?.image = NSImage(systemSymbolName: "square.and.arrow.up.fill", accessibilityDescription: "WordUp")
 
         // Make the status item accept drops
         statusItem.button?.window?.registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
