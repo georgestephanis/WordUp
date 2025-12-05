@@ -13,6 +13,15 @@ class WordPressService: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
+    // Public accessors for UI display
+    var authenticatedURL: String? {
+        baseURL?.absoluteString
+    }
+
+    var authenticatedUsername: String? {
+        username
+    }
+
     private let baseURLKey = "wordpressBaseURL"
     private let usernameKey = "wordpressUsername"
     private let tokenKey = "wordpressToken"

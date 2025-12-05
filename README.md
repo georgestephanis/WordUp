@@ -33,7 +33,7 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
    - The menu will automatically close and your browser will open to WordPress authorization page
    - Log in to WordPress (if not already logged in)
    - Approve the "WordUp" application
-   - You'll be redirected back to complete the setup
+   - The menu will automatically update to show your authenticated site and username
 
 ## Usage
 

@@ -14,9 +14,23 @@ struct ContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if wordPressService.isAuthenticated {
-                Text("Authenticated")
-                    .foregroundColor(.green)
-                    .font(.headline)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Authenticated")
+                        .foregroundColor(.green)
+                        .font(.headline)
+
+                    if let url = wordPressService.authenticatedURL {
+                        Text("Site: \(url)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    if let username = wordPressService.authenticatedUsername {
+                        Text("User: \(username)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
 
                 Divider()
 
