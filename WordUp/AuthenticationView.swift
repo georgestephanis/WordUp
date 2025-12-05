@@ -96,6 +96,12 @@ struct AuthenticationView: View {
                 await MainActor.run {
                     NSWorkspace.shared.open(authURL)
                     self.isAuthenticating = false
+
+                    // Close the popover menu when authorization starts
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("WordUpAuthorizationStarted"),
+                        object: nil
+                    )
                 }
 
                 // Show instructions to the user

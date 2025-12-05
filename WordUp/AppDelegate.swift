@@ -20,6 +20,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
         setupPopover()
         requestNotificationAuthorization()
         setupURLSchemeHandling()
+        setupNotifications()
     }
 
     private func setupStatusItem() {
@@ -50,6 +51,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
                 print("Notification authorization error: \(error.localizedDescription)")
             }
             // Note: Even if not granted, local notifications might still work on some systems
+        }
+    }
+
+    private func setupNotifications() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(closePopoverForAuthorization),
+            name: NSNotification.Name("WordUpAuthorizationStarted"),
+            object: nil
+        )
+    }
+
+    @objc private func closePopoverForAuthorization() {
+        if popover.isShown {
+            popover.performClose(nil)
         }
     }
 
