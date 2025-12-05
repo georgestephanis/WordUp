@@ -40,8 +40,19 @@ class WordPressService: ObservableObject {
     }
 
     func authenticate(baseURL: String, username: String, password: String) async throws {
-        guard let url = URL(string: baseURL) else {
+        // Validate and clean the URL
+        var cleanBaseURL = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !cleanBaseURL.hasPrefix("http://") && !cleanBaseURL.hasPrefix("https://") {
+            cleanBaseURL = "https://" + cleanBaseURL
+        }
+
+        guard let url = URL(string: cleanBaseURL) else {
             throw WordPressError.invalidURL
+        }
+
+        // Additional validation for local development domains
+        if url.host?.hasSuffix(".local") == true || url.host == "localhost" {
+            print("Attempting to connect to local development domain: \(url.absoluteString)")
         }
 
         self.baseURL = url
@@ -75,16 +86,50 @@ class WordPressService: ObservableObject {
         }
 
         let testURL = baseURL.appendingPathComponent("wp-json/wp/v2/users/me")
+        print("Testing authentication with URL: \(testURL.absoluteString)")
 
         var request = URLRequest(url: testURL)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30 // Increase timeout for local development
 
-        let (_, response) = try await URLSession.shared.data(for: request)
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw WordPressError.authenticationFailed
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw WordPressError.networkError("Invalid response type")
+            }
+
+            print("Authentication test response status: \(httpResponse.statusCode)")
+
+            if (200...299).contains(httpResponse.statusCode) {
+                // Success
+                return
+            } else if httpResponse.statusCode == 401 {
+                throw WordPressError.authenticationFailed
+            } else {
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("Authentication failed with response: \(responseString)")
+                }
+                throw WordPressError.networkError("HTTP \(httpResponse.statusCode)")
+            }
+        } catch let urlError as URLError {
+            print("URL Error: \(urlError.localizedDescription)")
+            switch urlError.code {
+            case .cannotFindHost:
+                throw WordPressError.networkError("Cannot find host. Check the URL and your network connection.")
+            case .cannotConnectToHost:
+                throw WordPressError.networkError("Cannot connect to host. Make sure the server is running and accessible.")
+            case .timedOut:
+                throw WordPressError.networkError("Connection timed out. Check your network or server status.")
+            case .secureConnectionFailed:
+                throw WordPressError.networkError("SSL/TLS connection failed. For local development, ensure your certificate is valid or use HTTP.")
+            default:
+                throw WordPressError.networkError("Network error: \(urlError.localizedDescription)")
+            }
+        } catch {
+            print("Unexpected error during authentication: \(error)")
+            throw WordPressError.networkError("Unexpected error: \(error.localizedDescription)")
         }
     }
 
@@ -194,4 +239,5 @@ enum WordPressError: Error {
     case notAuthenticated
     case uploadFailed
     case invalidResponse
+    case networkError(String)
 }

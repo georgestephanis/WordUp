@@ -14,7 +14,7 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 ## Requirements
 
 - macOS 13.0 or later
-- Self-hosted WordPress site with REST API enabled
+- Self-hosted WordPress site with REST API enabled (supports local development domains like .local)
 - WordPress Application Password
 
 ## Setup
