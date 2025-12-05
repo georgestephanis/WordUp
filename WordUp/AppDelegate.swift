@@ -27,7 +27,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.window?.registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
 
         // Set up the drag delegate
-        let dragView = DragDropView(wordPressService: wordPressService)
+        let dragView = DragDropView(wordPressService: self.wordPressService)
         statusItem.button?.window?.contentView = NSHostingView(rootView: dragView)
     }
 
