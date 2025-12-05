@@ -201,7 +201,7 @@ class WordPressService: ObservableObject {
         var components = URLComponents(url: authURL, resolvingAgainstBaseURL: false)!
 
         // Generate a unique app ID
-        let appID = UUID().uuidString
+        let appID = UUID().uuidString.lowercased()
 
         components.queryItems = [
             URLQueryItem(name: "app_name", value: "WordUp"),
@@ -344,7 +344,7 @@ class WordPressService: ObservableObject {
         let mimeType = getMimeType(for: fileURL.pathExtension)
 
         // Create multipart form data
-        let boundary = UUID().uuidString
+        let boundary = UUID().uuidString.lowercased()
         var request = URLRequest(url: uploadURL)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
