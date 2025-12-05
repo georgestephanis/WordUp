@@ -1,0 +1,197 @@
+//
+//  WordPressService.swift
+//  WordUp
+//
+//  Created by George Stephanis on 12/5/25.
+//
+
+import Foundation
+import Combine
+
+class WordPressService: ObservableObject {
+    @Published var isAuthenticated: Bool = false
+    @Published var isLoading: Bool = false
+    @Published var errorMessage: String?
+
+    private let baseURLKey = "wordpressBaseURL"
+    private let usernameKey = "wordpressUsername"
+    private let tokenKey = "wordpressToken"
+
+    private var baseURL: URL?
+    private var username: String?
+    private var token: String?
+
+    init() {
+        loadCredentials()
+    }
+
+    private func loadCredentials() {
+        let defaults = UserDefaults.standard
+
+        if let baseURLString = defaults.string(forKey: baseURLKey),
+           let url = URL(string: baseURLString) {
+            baseURL = url
+        }
+
+        username = defaults.string(forKey: usernameKey)
+        token = defaults.string(forKey: tokenKey)
+
+        isAuthenticated = token != nil && baseURL != nil && username != nil
+    }
+
+    func authenticate(baseURL: String, username: String, password: String) async throws {
+        guard let url = URL(string: baseURL) else {
+            throw WordPressError.invalidURL
+        }
+
+        self.baseURL = url
+        self.username = username
+
+        // Create application password token
+        let credentials = "\(username):\(password)"
+        guard let credentialsData = credentials.data(using: .utf8) else {
+            throw WordPressError.invalidCredentials
+        }
+
+        let base64Credentials = credentialsData.base64EncodedString()
+        self.token = "Basic \(base64Credentials)"
+
+        // Test the authentication
+        try await testAuthentication()
+
+        // Save credentials
+        saveCredentials()
+
+        DispatchQueue.main.async {
+            self.isAuthenticated = true
+            self.errorMessage = nil
+        }
+    }
+
+    private func testAuthentication() async throws {
+        guard let baseURL = baseURL,
+              let token = token else {
+            throw WordPressError.notAuthenticated
+        }
+
+        let testURL = baseURL.appendingPathComponent("wp-json/wp/v2/users/me")
+
+        var request = URLRequest(url: testURL)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw WordPressError.authenticationFailed
+        }
+    }
+
+    private func saveCredentials() {
+        let defaults = UserDefaults.standard
+        defaults.set(baseURL?.absoluteString, forKey: baseURLKey)
+        defaults.set(username, forKey: usernameKey)
+        defaults.set(token, forKey: tokenKey)
+    }
+
+    func signOut() {
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: baseURLKey)
+        defaults.removeObject(forKey: usernameKey)
+        defaults.removeObject(forKey: tokenKey)
+
+        baseURL = nil
+        username = nil
+        token = nil
+
+        isAuthenticated = false
+        errorMessage = nil
+    }
+
+    func uploadFile(_ fileURL: URL) async throws -> String {
+        guard let baseURL = baseURL,
+              let token = token else {
+            throw WordPressError.notAuthenticated
+        }
+
+        let uploadURL = baseURL.appendingPathComponent("wp-json/wp/v2/media")
+
+        // Get file data
+        let fileData = try Data(contentsOf: fileURL)
+        let filename = fileURL.lastPathComponent
+        let mimeType = getMimeType(for: fileURL.pathExtension)
+
+        // Create multipart form data
+        let boundary = UUID().uuidString
+        var request = URLRequest(url: uploadURL)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        var body = Data()
+
+        // Add file data
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+        body.append(fileData)
+        body.append("\r\n".data(using: .utf8)!)
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+
+        request.httpBody = body
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            if let httpResponse = response as? HTTPURLResponse {
+                print("Upload failed with status code: \(httpResponse.statusCode)")
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("Response: \(responseString)")
+                }
+            }
+            throw WordPressError.uploadFailed
+        }
+
+        // Parse response to get media URL
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let id = json["id"] as? Int else {
+            throw WordPressError.invalidResponse
+        }
+
+        // Return the media URL
+        if let sourceURL = json["source_url"] as? String {
+            return sourceURL
+        }
+
+        // Fallback: construct URL from base URL and ID
+        return "\(baseURL.absoluteString)/wp-admin/upload.php?item=\(id)"
+    }
+
+    private func getMimeType(for extension: String) -> String {
+        switch `extension`.lowercased() {
+        case "jpg", "jpeg":
+            return "image/jpeg"
+        case "png":
+            return "image/png"
+        case "gif":
+            return "image/gif"
+        case "webp":
+            return "image/webp"
+        case "svg":
+            return "image/svg+xml"
+        default:
+            return "application/octet-stream"
+        }
+    }
+}
+
+enum WordPressError: Error {
+    case invalidURL
+    case invalidCredentials
+    case authenticationFailed
+    case notAuthenticated
+    case uploadFailed
+    case invalidResponse
+}
