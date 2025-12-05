@@ -31,5 +31,7 @@
 	<string>Copyright © 2025 George Stephanis. All rights reserved.</string>
 	<key>NSSupportsSuddenTermination</key>
 	<string>YES</string>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>WordUp uses notifications to inform you about file upload status.</string>
 </dict>
 </plist>

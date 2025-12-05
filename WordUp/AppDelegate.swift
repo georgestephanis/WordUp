@@ -8,6 +8,7 @@
 import Cocoa
 import SwiftUI
 import UniformTypeIdentifiers
+import UserNotifications
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
     private var statusItem: NSStatusItem!
@@ -17,6 +18,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
         setupPopover()
+        requestNotificationAuthorization()
     }
 
     private func setupStatusItem() {
@@ -39,6 +41,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
         popover.contentSize = NSSize(width: 200, height: 300)
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(rootView: ContentView())
+    }
+
+    private func requestNotificationAuthorization() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if let error = error {
+                print("Notification authorization error: \(error.localizedDescription)")
+            }
+            // Note: Even if not granted, local notifications might still work on some systems
+        }
     }
 
     @objc func togglePopover(_ sender: AnyObject?) {
@@ -105,10 +116,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
     }
 
     private func showNotification(title: String, body: String) {
-        let notification = NSUserNotification()
-        notification.title = title
-        notification.informativeText = body
-        NSUserNotificationCenter.default.deliver(notification)
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error showing notification: \(error.localizedDescription)")
+            }
+        }
     }
 }
 

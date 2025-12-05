@@ -9,6 +9,7 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 - **Drag & Drop Upload**: Simply drag files or screenshots onto the menu bar icon
 - **Automatic Clipboard**: Uploaded media URLs are automatically copied to clipboard
 - **Local Token Storage**: Securely stores authentication tokens locally
+- **Modern Notifications**: Uses macOS UserNotifications framework for upload status alerts
 
 ## Requirements
 
