@@ -57,7 +57,7 @@ class WordPressService: ObservableObject {
         try await checkApplicationPasswordSupport()
 
         // Generate authorization URL
-        return try await generateAuthorizationURL()
+        return try generateAuthorizationURL()
     }
 
     func authenticate(baseURL: String, username: String, password: String) async throws {
@@ -77,11 +77,6 @@ class WordPressService: ObservableObject {
         let base64Credentials = credentialsData.base64EncodedString()
         self.token = "Basic \(base64Credentials)"
 
-
-        print("Credentials: \(credentials)")
-        print("Credentials data: \(credentialsData)")
-        print("Base64 credentials: \(base64Credentials)")
-
         // Test the authentication
         try await testAuthentication()
 
@@ -100,9 +95,6 @@ class WordPressService: ObservableObject {
         }
 
         let apiRootURL = baseURL.appendingPathComponent("wp-json/")
-        print("Checking application password support at: \(apiRootURL.absoluteString)")
-        print("Base URL: \(baseURL.absoluteString)")
-        print("Host: \(baseURL.host ?? "nil")")
 
         var request = URLRequest(url: apiRootURL)
         request.timeoutInterval = 30
@@ -111,46 +103,20 @@ class WordPressService: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
 
-            // Log response details
+            // Log basic response info
             if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Response from \(apiRootURL.absoluteString):")
-                print("Status Code: \(httpResponse.statusCode)")
-                print("Headers: \(httpResponse.allHeaderFields)")
-            } else {
-                print("Non-HTTP Response from \(apiRootURL.absoluteString):")
-                print("Response type: \(type(of: response))")
+                print("HTTP Status: \(httpResponse.statusCode)")
             }
 
             // Log the raw response data
-            print("Data length: \(data.count) bytes")
-            if data.isEmpty {
-                print("Response data is empty")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("API Response:")
+                print(responseString)
             } else {
-                // Try UTF-8 first
-                if let responseString = String(data: data, encoding: .utf8) {
-                    print("UTF-8 decoded response:")
-                    print(responseString)
-                } else {
-                    // Try other encodings
-                    let encodings: [String.Encoding] = [.ascii, .isoLatin1, .windowsCP1252]
-                    var decoded = false
-                    for encoding in encodings {
-                        if let responseString = String(data: data, encoding: encoding) {
-                            print("\(encoding) decoded response:")
-                            print(responseString)
-                            decoded = true
-                            break
-                        }
-                    }
-                    if !decoded {
-                        print("Could not decode response data as text. Raw bytes:")
-                        print(data as NSData)
-                    }
-                }
+                print("API Response: (binary data, \(data.count) bytes)")
             }
-            print("--- End Response ---")
 
-        guard let httpResponse = response as? HTTPURLResponse else {
+        guard response is HTTPURLResponse else {
             throw WordPressError.networkError("Invalid response type")
         }
 
@@ -198,7 +164,7 @@ class WordPressService: ObservableObject {
     }
 
     private func generateAuthorizationURL() throws -> URL {
-        guard let baseURL = baseURL,
+        guard let _ = baseURL,
               let authorizationEndpoint = authorizationEndpoint else {
             throw WordPressError.notAuthenticated
         }
@@ -229,56 +195,33 @@ class WordPressService: ObservableObject {
         }
 
         let testURL = baseURL.appendingPathComponent("wp-json/wp/v2/users/me")
-        print("Testing authentication with URL: \(testURL.absoluteString)")
 
-        print("Token: \(token)")
         var request = URLRequest(url: testURL)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpMethod = "GET"
+        request.setValue("\(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("WordUp/1.0 API Client by George Stephanis", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 30 // Increase timeout for local development
 
         do {
+            // Source - https://stackoverflow.com/a
+            // Posted by Naoise Golden, modified by community. See post 'Timeline' for change history
+            // Retrieved 2025-12-05, License - CC BY-SA 4.0
+
             let (data, response) = try await URLSession.shared.data(for: request)
 
-            // Log response details
+            // Log basic response info
             if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Response from \(testURL.absoluteString):")
-                print("Status Code: \(httpResponse.statusCode)")
-                print("Headers: \(httpResponse.allHeaderFields)")
-            } else {
-                print("Non-HTTP Response from \(testURL.absoluteString):")
-                print("Response type: \(type(of: response))")
+                print("HTTP Status: \(httpResponse.statusCode)")
             }
 
             // Log the raw response data
-            print("Data length: \(data.count) bytes")
-            if data.isEmpty {
-                print("Response data is empty")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("API Response:")
+                print(responseString)
             } else {
-                // Try UTF-8 first
-                if let responseString = String(data: data, encoding: .utf8) {
-                    print("UTF-8 decoded response:")
-                    print(responseString)
-                } else {
-                    // Try other encodings
-                    let encodings: [String.Encoding] = [.ascii, .isoLatin1, .windowsCP1252]
-                    var decoded = false
-                    for encoding in encodings {
-                        if let responseString = String(data: data, encoding: encoding) {
-                            print("\(encoding) decoded response:")
-                            print(responseString)
-                            decoded = true
-                            break
-                        }
-                    }
-                    if !decoded {
-                        print("Could not decode response data as text. Raw bytes:")
-                        print(data as NSData)
-                    }
-                }
+                print("API Response: (binary data, \(data.count) bytes)")
             }
-            print("--- End Response ---")
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw WordPressError.networkError("Invalid response type")
@@ -373,44 +316,18 @@ class WordPressService: ObservableObject {
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
-        // Log response details
+        // Log basic response info
         if let httpResponse = response as? HTTPURLResponse {
-            print("HTTP Response from \(uploadURL.absoluteString):")
-            print("Status Code: \(httpResponse.statusCode)")
-            print("Headers: \(httpResponse.allHeaderFields)")
-        } else {
-            print("Non-HTTP Response from \(uploadURL.absoluteString):")
-            print("Response type: \(type(of: response))")
+            print("HTTP Status: \(httpResponse.statusCode)")
         }
 
         // Log the raw response data
-        print("Data length: \(data.count) bytes")
-        if data.isEmpty {
-            print("Response data is empty")
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("API Response:")
+            print(responseString)
         } else {
-            // Try UTF-8 first
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("UTF-8 decoded response:")
-                print(responseString)
-            } else {
-                // Try other encodings
-                let encodings: [String.Encoding] = [.ascii, .isoLatin1, .windowsCP1252]
-                var decoded = false
-                for encoding in encodings {
-                    if let responseString = String(data: data, encoding: encoding) {
-                        print("\(encoding) decoded response:")
-                        print(responseString)
-                        decoded = true
-                        break
-                    }
-                }
-                if !decoded {
-                    print("Could not decode response data as text. Raw bytes:")
-                    print(data as NSData)
-                }
-            }
+            print("API Response: (binary data, \(data.count) bytes)")
         }
-        print("--- End Response ---")
 
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {

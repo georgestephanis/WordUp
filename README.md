@@ -28,7 +28,7 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
    - Download and install WordUp.app
    - Click the menu bar icon and select "Authenticate"
    - Enter your WordPress site URL (e.g., `https://yoursite.com`)
-   - Click "Connect to WordPress"
+   - Click "Connect to WordPress" or press Enter
    - The menu will automatically close and your browser will open to WordPress authorization page
    - Log in to WordPress (if not already logged in)
    - Approve the "WordUp" application

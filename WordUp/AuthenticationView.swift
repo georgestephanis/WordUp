@@ -28,6 +28,9 @@ struct AuthenticationView: View {
                     TextField("https://yoursite.com", text: $baseURL)
                         .textFieldStyle(.roundedBorder)
                         .disabled(isAuthenticating)
+                        .onSubmit {
+                            startAuthentication()
+                        }
                 }
             }
             .padding(.horizontal)
@@ -55,8 +58,8 @@ struct AuthenticationView: View {
         }
         .frame(width: 400, height: 350)
         .padding()
-        .onChange(of: wordPressService.isAuthenticated) { isAuthenticated in
-            if isAuthenticated {
+        .onChange(of: wordPressService.isAuthenticated) { oldValue, newValue in
+            if newValue {
                 showSuccess = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                     dismiss()
