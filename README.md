@@ -4,7 +4,7 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 
 ## Features
 
-- **Menu Bar Integration**: Lives in the macOS menu bar for quick access
+- **Menu Bar Integration**: Lives in the macOS menu bar for quick access (works properly in multi-monitor setups)
 - **WordPress Authentication**: Uses Application Passwords for secure authentication
 - **Drag & Drop Upload**: Simply drag files or screenshots onto the menu bar icon
 - **Automatic Clipboard**: Uploaded media URLs are automatically copied to clipboard

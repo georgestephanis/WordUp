@@ -9,7 +9,7 @@ import Cocoa
 import SwiftUI
 import UniformTypeIdentifiers
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
     private let wordPressService = WordPressService()
@@ -23,12 +23,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.image = NSImage(systemSymbolName: "square.and.arrow.up.fill", accessibilityDescription: "WordUp")
 
-        // Make the status item accept drops
-        statusItem.button?.window?.registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
+        // Set up button action for clicks
+        statusItem.button?.target = self
+        statusItem.button?.action = #selector(togglePopover(_:))
 
-        // Set up the drag delegate
-        let dragView = DragDropView(wordPressService: self.wordPressService)
-        statusItem.button?.window?.contentView = NSHostingView(rootView: dragView)
+        // Make the button accept drops and set dragging destination
+        if let window = statusItem.button?.window {
+            window.registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
+            window.contentView?.registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
+        }
     }
 
     private func setupPopover() {
@@ -47,47 +50,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
     }
-}
 
-struct DragDropView: View {
-    @StateObject var wordPressService: WordPressService
-    @State private var isDragOver = false
+    // MARK: - NSDraggingDestination
 
-    var body: some View {
-        ZStack {
-            Color.clear
-                .frame(width: 22, height: 22)
-                .onTapGesture {
-                    NSApp.sendAction(#selector(AppDelegate.togglePopover(_:)), to: nil, from: nil)
-                }
-        }
-        .onDrop(of: [.fileURL], isTargeted: $isDragOver) { providers in
+    func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        return .copy
+    }
+
+    func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        return .copy
+    }
+
+    func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let pasteboard = sender.draggingPasteboard
+
+        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL] {
             Task {
-                await handleDrop(providers: providers)
+                for url in urls {
+                    await self.uploadFile(url)
+                }
             }
             return true
         }
-        .overlay {
-            if isDragOver {
-                Circle()
-                    .fill(Color.blue.opacity(0.3))
-                    .frame(width: 30, height: 30)
-            }
-        }
-    }
 
-    private func handleDrop(providers: [NSItemProvider]) async {
-        for provider in providers {
-            do {
-                let urlData = try await provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier)
-                if let urlData = urlData as? Data,
-                   let url = URL(dataRepresentation: urlData, relativeTo: nil) {
-                    await uploadFile(url)
-                }
-            } catch {
-                print("Error loading dropped item: \(error)")
-            }
-        }
+        return false
     }
 
     private func uploadFile(_ fileURL: URL) async {
@@ -125,3 +111,5 @@ struct DragDropView: View {
         NSUserNotificationCenter.default.deliver(notification)
     }
 }
+
+// Note: DragDropView has been removed - drag handling is now done directly in AppDelegate
