@@ -85,9 +85,12 @@ struct AuthenticationView: View {
         isAuthenticating = true
         errorMessage = nil
 
+        print("Starting authentication with URL: \(baseURL)")
+
         Task {
             do {
                 let authURL = try await wordPressService.startAuthentication(baseURL: baseURL)
+                print("Generated authorization URL: \(authURL.absoluteString)")
 
                 // Open the authorization URL in the default browser
                 await MainActor.run {
@@ -101,6 +104,7 @@ struct AuthenticationView: View {
                 }
 
             } catch {
+                print("Authentication error: \(error.localizedDescription)")
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.isAuthenticating = false

@@ -96,11 +96,14 @@ class WordPressService: ObservableObject {
 
         let apiRootURL = baseURL.appendingPathComponent("wp-json/wp/v2")
         print("Checking application password support at: \(apiRootURL.absoluteString)")
+        print("Base URL: \(baseURL.absoluteString)")
+        print("Host: \(baseURL.host ?? "nil")")
 
         var request = URLRequest(url: apiRootURL)
         request.timeoutInterval = 30
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw WordPressError.networkError("Invalid response type")
@@ -124,8 +127,29 @@ class WordPressService: ObservableObject {
             throw WordPressError.networkError("Application password authorization endpoint not found")
         }
 
-        // Store the authorization endpoint
-        self.authorizationEndpoint = authorizationURLString
+            // Store the authorization endpoint
+            self.authorizationEndpoint = authorizationURLString
+        } catch let urlError as URLError {
+            print("Network error during application password check: \(urlError.localizedDescription)")
+            print("Error code: \(urlError.code.rawValue)")
+            switch urlError.code {
+            case .cannotFindHost:
+                throw WordPressError.networkError("Cannot find host. Check the URL and your network connection.")
+            case .cannotConnectToHost:
+                throw WordPressError.networkError("Cannot connect to host. Make sure the server is running and accessible.")
+            case .timedOut:
+                throw WordPressError.networkError("Connection timed out. Check your network or server status.")
+            case .secureConnectionFailed:
+                throw WordPressError.networkError("SSL/TLS connection failed. For local development, ensure your certificate is valid.")
+            case .notConnectedToInternet:
+                throw WordPressError.networkError("No internet connection detected.")
+            default:
+                throw WordPressError.networkError("Network error: \(urlError.localizedDescription)")
+            }
+        } catch {
+            print("Unexpected error during application password check: \(error)")
+            throw WordPressError.networkError("Unexpected error: \(error.localizedDescription)")
+        }
     }
 
     private func generateAuthorizationURL() throws -> URL {
