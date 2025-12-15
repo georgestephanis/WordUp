@@ -164,7 +164,7 @@ class WordPressService: ObservableObject {
             print("Error code: \(urlError.code.rawValue)")
             switch urlError.code {
             case .cannotFindHost:
-                if baseURL?.host?.hasSuffix(".local") == true {
+                if baseURL.host?.hasSuffix(".local") == true {
                     throw WordPressError.networkError("Cannot find .local domain. Ensure your local development server is running and DNS is configured correctly. For MAMP/XAMPP, check that the virtual host is set up properly.")
                 } else {
                     throw WordPressError.networkError("Cannot find host. Check the URL and your network connection.")
@@ -172,7 +172,7 @@ class WordPressService: ObservableObject {
             case .cannotConnectToHost:
                 throw WordPressError.networkError("Cannot connect to host. Make sure the server is running and accessible.")
             case .timedOut:
-                if baseURL?.host?.hasSuffix(".local") == true {
+                if baseURL.host?.hasSuffix(".local") == true {
                     throw WordPressError.networkError("Connection timed out. Local development servers can be slow - try increasing server timeouts or check if the server is overloaded.")
                 } else {
                     throw WordPressError.networkError("Connection timed out. Check your network or server status.")
