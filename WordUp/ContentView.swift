@@ -8,8 +8,9 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var wordPressService = WordPressService()
+    @EnvironmentObject private var wordPressService: WordPressService
     @State private var showingAuthWindow = false
+    @State private var isVerifyingAuth = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -37,6 +38,13 @@ struct ContentView: View {
                 Button("Upload Files...") {
                     // File upload logic will be implemented
                 }
+
+                Button(isVerifyingAuth ? "Verifying..." : "Verify Authentication") {
+                    Task {
+                        await verifyAuthentication()
+                    }
+                }
+                .disabled(isVerifyingAuth)
 
                 Button("Settings") {
                     // Settings window will be implemented
@@ -70,6 +78,23 @@ struct ContentView: View {
         .sheet(isPresented: $showingAuthWindow) {
             AuthenticationView()
                 .environmentObject(wordPressService)
+        }
+    }
+
+    private func verifyAuthentication() async {
+        guard wordPressService.isAuthenticated else { return }
+
+        isVerifyingAuth = true
+        defer { isVerifyingAuth = false }
+
+        do {
+            try await wordPressService.verifyAuthentication()
+            // Success - authentication is still valid
+            print("Authentication verified successfully")
+        } catch {
+            print("Authentication verification failed: \(error.localizedDescription)")
+            // If verification fails, sign out the user
+            wordPressService.signOut()
         }
     }
 }

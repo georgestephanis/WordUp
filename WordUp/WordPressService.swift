@@ -294,6 +294,15 @@ class WordPressService: ObservableObject {
         errorMessage = nil
     }
 
+    func verifyAuthentication() async throws {
+        guard isAuthenticated else {
+            throw WordPressError.notAuthenticated
+        }
+
+        // Test the current authentication by calling the users/me endpoint
+        try await testAuthentication()
+    }
+
     func uploadFile(_ fileURL: URL) async throws -> String {
         guard let baseURL = baseURL,
               let token = token else {
