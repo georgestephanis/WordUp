@@ -30,8 +30,6 @@ struct ContentView: View {
                 Button("Settings") {
                     showingSettings = true
                 }
-
-                Divider()
             } else {
                 Text("Not Authenticated")
                     .foregroundColor(.red)
