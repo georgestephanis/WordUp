@@ -10,7 +10,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 import UserNotifications
 
-class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
+class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
     private let wordPressService = WordPressService()
@@ -186,42 +186,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
         }
     }
 
-    // MARK: - NSDraggingDestination
-
-    func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
-        if isValidFileDrag(sender) {
-            // Show the popover when dragging valid files to make it a clear drop target
-            if !popover.isShown {
-                if let button = statusItem.button {
-                    popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
-                }
-            }
-            return .copy
-        }
-        return []
-    }
-
-    func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
-        // Close the popover if it's open (user dropped on the icon instead of the popover)
-        if popover.isShown {
-            popover.performClose(nil)
-        }
-        return false // Let the popover handle the actual drop
-    }
-
-    private func isValidFileDrag(_ draggingInfo: NSDraggingInfo) -> Bool {
-        let pasteboard = draggingInfo.draggingPasteboard
-        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL] {
-            return urls.contains { isValidUploadFile($0) }
-        }
-        return false
-    }
-
-    private func isValidUploadFile(_ url: URL) -> Bool {
-        let supportedExtensions = ["png", "jpg", "jpeg", "gif", "webp", "svg"]
-        let fileExtension = url.pathExtension.lowercased()
-        return supportedExtensions.contains(fileExtension) && url.isFileURL
-    }
+    // Drag-and-drop is handled via ContentView.onDrop when the popover is open
 
     private func uploadFile(_ fileURL: URL) async {
         guard self.wordPressService.isAuthenticated else {

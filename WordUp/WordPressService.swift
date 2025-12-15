@@ -119,12 +119,32 @@ class WordPressService: ObservableObject {
         request.timeoutInterval = 45 // Increased timeout for local development
         request.setValue("WordUp/1.0 API Client by George Stephanis", forHTTPHeaderField: "User-Agent")
 
+        // Log the request
+        let requestHeaders = request.allHTTPHeaderFields
+        let logEntry = LogManager.shared.logRequest(
+            method: request.httpMethod ?? "GET",
+            url: apiRootURL.absoluteString,
+            headers: requestHeaders,
+            body: nil
+        )
+
+        let startTime = Date()
+
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
+
+            let duration = Date().timeIntervalSince(startTime)
 
             // Log basic response info
             if let httpResponse = response as? HTTPURLResponse {
                 print("HTTP Status: \(httpResponse.statusCode)")
+
+                // Log to LogManager
+                let responseHeaders = Dictionary(uniqueKeysWithValues: httpResponse.allHeaderFields.map { key, value in
+                    (key as? String ?? String(describing: key), String(describing: value))
+                })
+                let responseBody = String(data: data, encoding: .utf8)
+                LogManager.shared.logResponse(for: logEntry, status: httpResponse.statusCode, headers: responseHeaders, body: responseBody, duration: duration)
             }
 
             // Log the raw response data
@@ -232,6 +252,17 @@ class WordPressService: ObservableObject {
         request.setValue("WordUp/1.0 API Client by George Stephanis", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 30 // Increase timeout for local development
 
+        // Log the request
+        let requestHeaders = request.allHTTPHeaderFields
+        let logEntry = LogManager.shared.logRequest(
+            method: request.httpMethod ?? "GET",
+            url: testURL.absoluteString,
+            headers: requestHeaders,
+            body: nil
+        )
+
+        let startTime = Date()
+
         do {
             // Source - https://stackoverflow.com/a
             // Posted by Naoise Golden, modified by community. See post 'Timeline' for change history
@@ -239,9 +270,18 @@ class WordPressService: ObservableObject {
 
             let (data, response) = try await URLSession.shared.data(for: request)
 
+            let duration = Date().timeIntervalSince(startTime)
+
             // Log basic response info
             if let httpResponse = response as? HTTPURLResponse {
                 print("HTTP Status: \(httpResponse.statusCode)")
+
+                // Log to LogManager
+                let responseHeaders = Dictionary(uniqueKeysWithValues: httpResponse.allHeaderFields.map { key, value in
+                    (key as? String ?? String(describing: key), String(describing: value))
+                })
+                let responseBody = String(data: data, encoding: .utf8)
+                LogManager.shared.logResponse(for: logEntry, status: httpResponse.statusCode, headers: responseHeaders, body: responseBody, duration: duration)
             }
 
             // Log the raw response data
@@ -352,11 +392,31 @@ class WordPressService: ObservableObject {
 
         request.httpBody = body
 
+        // Log the request (don't log the multipart body as it contains file data)
+        let requestHeaders = request.allHTTPHeaderFields
+        let logEntry = LogManager.shared.logRequest(
+            method: request.httpMethod ?? "POST",
+            url: uploadURL.absoluteString,
+            headers: requestHeaders,
+            body: "<multipart form data - \(fileData.count) bytes>"
+        )
+
+        let startTime = Date()
+
         let (data, response) = try await URLSession.shared.data(for: request)
+
+        let duration = Date().timeIntervalSince(startTime)
 
         // Log basic response info
         if let httpResponse = response as? HTTPURLResponse {
             print("HTTP Status: \(httpResponse.statusCode)")
+
+            // Log to LogManager
+            let responseHeaders = Dictionary(uniqueKeysWithValues: httpResponse.allHeaderFields.map { key, value in
+                (key as? String ?? String(describing: key), String(describing: value))
+            })
+            let responseBody = String(data: data, encoding: .utf8)
+            LogManager.shared.logResponse(for: logEntry, status: httpResponse.statusCode, headers: responseHeaders, body: responseBody, duration: duration)
         }
 
         // Log the raw response data

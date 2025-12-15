@@ -9,7 +9,9 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var wordPressService: WordPressService
+    @StateObject private var logManager = LogManager.shared
     @State private var isVerifyingAuth = false
+    @State private var showingLogs = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -90,6 +92,33 @@ struct SettingsView: View {
                 }
             }
 
+            Divider()
+
+            // API Logs Section
+            VStack(alignment: .leading, spacing: 12) {
+                Text("API Logs")
+                    .font(.headline)
+
+                HStack {
+                    Text("\(logManager.entries.count) requests logged")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Spacer()
+
+                    Button("View Logs") {
+                        showingLogs = true
+                    }
+
+                    if !logManager.entries.isEmpty {
+                        Button("Clear Logs") {
+                            logManager.clearLogs()
+                        }
+                        .foregroundColor(.red)
+                    }
+                }
+            }
+
             Spacer()
 
             HStack {
@@ -102,6 +131,9 @@ struct SettingsView: View {
         }
         .frame(width: 400, height: 350)
         .padding()
+        .sheet(isPresented: $showingLogs) {
+            LogsView()
+        }
     }
 
     private func verifyAuthentication() async {
