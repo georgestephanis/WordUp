@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
+import UserNotifications
 
 struct ContentView: View {
     @EnvironmentObject private var wordPressService: WordPressService
@@ -132,19 +134,33 @@ struct ContentView: View {
                 pasteboard.setString(mediaURL, forType: .string)
 
                 // Show success notification
-                let notification = NSUserNotification()
-                notification.title = "Upload Successful"
-                notification.informativeText = "Media URL copied to clipboard"
-                NSUserNotificationCenter.default.deliver(notification)
+                do {
+                    let content = UNMutableNotificationContent()
+                    content.title = "Upload Successful"
+                    content.body = "Media URL copied to clipboard"
+                    content.sound = .default
+
+                    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+                    try await UNUserNotificationCenter.current().add(request)
+                } catch {
+                    print("Error showing notification: \(error.localizedDescription)")
+                }
 
             } catch {
                 print("Failed to upload \(url.lastPathComponent): \(error.localizedDescription)")
 
                 // Show error notification
-                let notification = NSUserNotification()
-                notification.title = "Upload Failed"
-                notification.informativeText = "\(url.lastPathComponent): \(error.localizedDescription)"
-                NSUserNotificationCenter.default.deliver(notification)
+                do {
+                    let content = UNMutableNotificationContent()
+                    content.title = "Upload Failed"
+                    content.body = "\(url.lastPathComponent): \(error.localizedDescription)"
+                    content.sound = .default
+
+                    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+                    try await UNUserNotificationCenter.current().add(request)
+                } catch {
+                    print("Error showing notification: \(error.localizedDescription)")
+                }
             }
         }
     }

@@ -9,7 +9,7 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 - **Drag & Drop Upload**: Simply drag files or screenshots onto the menu bar icon
 - **Automatic Clipboard**: Uploaded media URLs are automatically copied to clipboard
 - **Local Token Storage**: Securely stores authentication tokens locally
-- **Modern Notifications**: Uses macOS UserNotifications framework for upload status alerts
+- **Modern Notifications**: Uses macOS UserNotifications framework with async/await (no deprecated APIs)
 - **Custom User-Agent**: Identifies requests with "WordUp/1.0 API Client by George Stephanis"
 
 ## Requirements
@@ -22,6 +22,7 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 ## Setup
 
 1. **Ensure Application Passwords are enabled**:
+
    - WordPress 5.6+ has Application Passwords built-in
    - For older versions, install the Application Passwords plugin
 
@@ -41,17 +42,20 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 ### File Upload Methods
 
 **Method 1: Drag & Drop**
+
 1. Take a screenshot or select any image file
 2. Drag the file onto the WordUp icon in the menu bar
 3. The file uploads automatically and the media URL is copied to your clipboard
 
 **Method 2: Upload Files Button**
+
 1. Click the WordUp menu bar icon
 2. Click "Upload Files..." button
 3. Select image files from the file picker
 4. Files upload automatically and URLs are copied to clipboard
 
 **Method 3: Automatic Screenshot Upload**
+
 1. Take a screenshot using macOS screenshot tools (⌘⇧4, ⌘⇧5, etc.)
 2. WordUp automatically detects and uploads the screenshot
 3. Media URL is copied to your clipboard

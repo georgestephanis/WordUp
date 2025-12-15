@@ -150,19 +150,33 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
             pasteboard.setString(mediaURL, forType: .string)
 
             // Show success notification
-            let notification = NSUserNotification()
-            notification.title = "Screenshot Uploaded"
-            notification.informativeText = "Media URL copied to clipboard"
-            NSUserNotificationCenter.default.deliver(notification)
+            do {
+                let content = UNMutableNotificationContent()
+                content.title = "Screenshot Uploaded"
+                content.body = "Media URL copied to clipboard"
+                content.sound = .default
+
+                let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+                try await UNUserNotificationCenter.current().add(request)
+            } catch {
+                print("Error showing notification: \(error.localizedDescription)")
+            }
 
         } catch {
             print("Failed to upload screenshot: \(error.localizedDescription)")
 
             // Show error notification
-            let notification = NSUserNotification()
-            notification.title = "Screenshot Upload Failed"
-            notification.informativeText = error.localizedDescription
-            NSUserNotificationCenter.default.deliver(notification)
+            do {
+                let content = UNMutableNotificationContent()
+                content.title = "Screenshot Upload Failed"
+                content.body = error.localizedDescription
+                content.sound = .default
+
+                let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+                try await UNUserNotificationCenter.current().add(request)
+            } catch {
+                print("Error showing notification: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -234,7 +248,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
                 )
 
                 await MainActor.run {
-                    showNotification(title: "Authentication Successful", body: "Connected to \(siteURL)")
+                    await showNotification(title: "Authentication Successful", body: "Connected to \(siteURL)")
                     // Close any open authentication windows
                     if let window = NSApp.windows.first(where: { $0.title.contains("Authentication") }) {
                         window.close()
@@ -318,11 +332,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
             let mediaURL = try await self.wordPressService.uploadFile(fileURL)
             await MainActor.run {
                 self.copyToClipboard(mediaURL)
-                self.showNotification(title: "Upload Successful", body: "Media URL copied to clipboard")
+                await self.showNotification(title: "Upload Successful", body: "Media URL copied to clipboard")
             }
         } catch {
             await MainActor.run {
-                self.showNotification(title: "Upload Failed", body: error.localizedDescription)
+                await self.showNotification(title: "Upload Failed", body: error.localizedDescription)
             }
         }
     }
@@ -333,17 +347,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
         pasteboard.setString(text, forType: .string)
     }
 
-    private func showNotification(title: String, body: String) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
+    private func showNotification(title: String, body: String) async {
+        do {
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
 
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error showing notification: \(error.localizedDescription)")
-            }
+            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+            try await UNUserNotificationCenter.current().add(request)
+        } catch {
+            print("Error showing notification: \(error.localizedDescription)")
         }
     }
 }
