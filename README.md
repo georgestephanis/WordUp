@@ -17,6 +17,7 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 - macOS 13.0 or later
 - Self-hosted WordPress site with REST API enabled (supports local development domains like .local)
 - WordPress Application Password
+- **For automatic screenshot uploads**: WordUp monitors your Desktop/Screenshots folder
 
 ## Setup
 
@@ -37,11 +38,31 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 
 ## Usage
 
-1. **Take a screenshot** or select any image/file
-2. **Drag the file** onto the WordUp icon in the menu bar
-3. The file will be uploaded to your WordPress media library
-4. The media URL will be automatically copied to your clipboard
-5. Paste the URL wherever you need it
+### File Upload Methods
+
+**Method 1: Drag & Drop**
+1. Take a screenshot or select any image file
+2. Drag the file onto the WordUp icon in the menu bar
+3. The file uploads automatically and the media URL is copied to your clipboard
+
+**Method 2: Upload Files Button**
+1. Click the WordUp menu bar icon
+2. Click "Upload Files..." button
+3. Select image files from the file picker
+4. Files upload automatically and URLs are copied to clipboard
+
+**Method 3: Automatic Screenshot Upload**
+1. Take a screenshot using macOS screenshot tools (⌘⇧4, ⌘⇧5, etc.)
+2. WordUp automatically detects and uploads the screenshot
+3. Media URL is copied to your clipboard
+
+### Features
+
+- **Supported Formats**: PNG, JPEG, GIF, WebP, SVG
+- **Multiple Files**: Upload multiple files at once via drag & drop or file picker
+- **Clipboard Integration**: Media URLs automatically copied to clipboard
+- **Notifications**: Success/failure notifications for all uploads
+- **Authentication Required**: Must be authenticated to upload files
 
 ## Security
 

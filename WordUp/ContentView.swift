@@ -36,7 +36,7 @@ struct ContentView: View {
                 Divider()
 
                 Button("Upload Files...") {
-                    // File upload logic will be implemented
+                    openFilePicker()
                 }
 
                 Button(isVerifyingAuth ? "Verifying..." : "Verify Authentication") {
@@ -95,6 +95,57 @@ struct ContentView: View {
             print("Authentication verification failed: \(error.localizedDescription)")
             // If verification fails, sign out the user
             wordPressService.signOut()
+        }
+    }
+
+    private func openFilePicker() {
+        let openPanel = NSOpenPanel()
+        openPanel.canChooseFiles = true
+        openPanel.canChooseDirectories = false
+        openPanel.allowsMultipleSelection = true
+        openPanel.allowedContentTypes = [
+            .png, .jpeg, .gif, .webP,
+            UTType(filenameExtension: "jpg")!,
+            UTType(filenameExtension: "svg")!,
+            UTType(filenameExtension: "webp")!
+        ]
+        openPanel.title = "Select Files to Upload"
+
+        openPanel.begin { result in
+            if result == .OK {
+                Task {
+                    await uploadFiles(Array(openPanel.urls))
+                }
+            }
+        }
+    }
+
+    private func uploadFiles(_ urls: [URL]) async {
+        for url in urls {
+            do {
+                let mediaURL = try await wordPressService.uploadFile(url)
+                print("File uploaded successfully: \(mediaURL)")
+
+                // Copy the media URL to clipboard
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                pasteboard.setString(mediaURL, forType: .string)
+
+                // Show success notification
+                let notification = NSUserNotification()
+                notification.title = "Upload Successful"
+                notification.informativeText = "Media URL copied to clipboard"
+                NSUserNotificationCenter.default.deliver(notification)
+
+            } catch {
+                print("Failed to upload \(url.lastPathComponent): \(error.localizedDescription)")
+
+                // Show error notification
+                let notification = NSUserNotification()
+                notification.title = "Upload Failed"
+                notification.informativeText = "\(url.lastPathComponent): \(error.localizedDescription)"
+                NSUserNotificationCenter.default.deliver(notification)
+            }
         }
     }
 }
