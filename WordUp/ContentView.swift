@@ -81,6 +81,12 @@ struct ContentView: View {
             AuthenticationView()
                 .environmentObject(wordPressService)
         }
+        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+            Task {
+                await handleFileDrop(providers: providers)
+            }
+            return true
+        }
     }
 
     private func verifyAuthentication() async {
@@ -122,47 +128,68 @@ struct ContentView: View {
         }
     }
 
-    private func uploadFiles(_ urls: [URL]) async {
-        for url in urls {
+    private func handleFileDrop(providers: [NSItemProvider]) async {
+        for provider in providers {
             do {
-                let mediaURL = try await wordPressService.uploadFile(url)
-                print("File uploaded successfully: \(mediaURL)")
+                let urlData = try await provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier)
+                if let urlData = urlData as? Data,
+                   let url = URL(dataRepresentation: urlData, relativeTo: nil),
+                   isValidUploadFile(url) {
+                    await uploadFile(url)
+                }
+            } catch {
+                print("Error loading dropped item: \(error)")
+            }
+        }
+    }
 
-                // Copy the media URL to clipboard
+    private func uploadFile(_ url: URL) async {
+        do {
+            let mediaURL = try await wordPressService.uploadFile(url)
+            print("File uploaded successfully: \(mediaURL)")
+
+            // Copy the media URL to clipboard
+            await MainActor.run {
                 let pasteboard = NSPasteboard.general
                 pasteboard.clearContents()
                 pasteboard.setString(mediaURL, forType: .string)
-
-                // Show success notification
-                do {
-                    let content = UNMutableNotificationContent()
-                    content.title = "Upload Successful"
-                    content.body = "Media URL copied to clipboard"
-                    content.sound = .default
-
-                    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-                    try await UNUserNotificationCenter.current().add(request)
-                } catch {
-                    print("Error showing notification: \(error.localizedDescription)")
-                }
-
-            } catch {
-                print("Failed to upload \(url.lastPathComponent): \(error.localizedDescription)")
-
-                // Show error notification
-                do {
-                    let content = UNMutableNotificationContent()
-                    content.title = "Upload Failed"
-                    content.body = "\(url.lastPathComponent): \(error.localizedDescription)"
-                    content.sound = .default
-
-                    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-                    try await UNUserNotificationCenter.current().add(request)
-                } catch {
-                    print("Error showing notification: \(error.localizedDescription)")
-                }
             }
+
+            // Show success notification
+            await showNotification(title: "Upload Successful", body: "Media URL copied to clipboard")
+
+        } catch {
+            print("Failed to upload \(url.lastPathComponent): \(error.localizedDescription)")
+
+            // Show error notification
+            await showNotification(title: "Upload Failed", body: "\(url.lastPathComponent): \(error.localizedDescription)")
         }
+    }
+
+    private func uploadFiles(_ urls: [URL]) async {
+        for url in urls {
+            await uploadFile(url)
+        }
+    }
+
+    private func showNotification(title: String, body: String) async {
+        do {
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
+
+            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+            try await UNUserNotificationCenter.current().add(request)
+        } catch {
+            print("Error showing notification: \(error.localizedDescription)")
+        }
+    }
+
+    private func isValidUploadFile(_ url: URL) -> Bool {
+        let supportedExtensions = ["png", "jpg", "jpeg", "gif", "webp", "svg"]
+        let fileExtension = url.pathExtension.lowercased()
+        return supportedExtensions.contains(fileExtension) && url.isFileURL
     }
 }
 

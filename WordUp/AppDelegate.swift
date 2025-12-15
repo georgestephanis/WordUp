@@ -31,11 +31,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
         statusItem.button?.target = self
         statusItem.button?.action = #selector(togglePopover(_:))
 
-        // Make the button accept drops and set dragging destination
-        if let window = statusItem.button?.window {
-            window.registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
-            window.contentView?.registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
-        }
+        // Note: Drag-and-drop is handled by opening the popover when dragging valid files
+        // The ContentView in the popover handles the actual drop operation
     }
 
     private func setupPopover() {
@@ -192,26 +189,38 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
     // MARK: - NSDraggingDestination
 
     func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
-        return .copy
-    }
-
-    func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
-        return .copy
+        if isValidFileDrag(sender) {
+            // Show the popover when dragging valid files to make it a clear drop target
+            if !popover.isShown {
+                if let button = statusItem.button {
+                    popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
+                }
+            }
+            return .copy
+        }
+        return []
     }
 
     func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
-        let pasteboard = sender.draggingPasteboard
-
-        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL] {
-            Task {
-                for url in urls {
-                    await self.uploadFile(url)
-                }
-            }
-            return true
+        // Close the popover if it's open (user dropped on the icon instead of the popover)
+        if popover.isShown {
+            popover.performClose(nil)
         }
+        return false // Let the popover handle the actual drop
+    }
 
+    private func isValidFileDrag(_ draggingInfo: NSDraggingInfo) -> Bool {
+        let pasteboard = draggingInfo.draggingPasteboard
+        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL] {
+            return urls.contains { isValidUploadFile($0) }
+        }
         return false
+    }
+
+    private func isValidUploadFile(_ url: URL) -> Bool {
+        let supportedExtensions = ["png", "jpg", "jpeg", "gif", "webp", "svg"]
+        let fileExtension = url.pathExtension.lowercased()
+        return supportedExtensions.contains(fileExtension) && url.isFileURL
     }
 
     private func uploadFile(_ fileURL: URL) async {
