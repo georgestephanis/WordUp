@@ -64,6 +64,12 @@ class WordPressService: ObservableObject {
             throw WordPressError.invalidURL
         }
 
+        // Provide helpful feedback for local development
+        if url.host?.hasSuffix(".local") == true {
+            print("Connecting to local development domain: \(url.absoluteString)")
+            print("Note: .local domains may have slower DNS resolution - this is normal for development environments")
+        }
+
         self.baseURL = url
 
         // Check if application passwords are supported
@@ -110,7 +116,7 @@ class WordPressService: ObservableObject {
         let apiRootURL = baseURL.appendingPathComponent("wp-json/")
 
         var request = URLRequest(url: apiRootURL)
-        request.timeoutInterval = 30
+        request.timeoutInterval = 45 // Increased timeout for local development
         request.setValue("WordUp/1.0 API Client by George Stephanis", forHTTPHeaderField: "User-Agent")
 
         do {
@@ -158,13 +164,23 @@ class WordPressService: ObservableObject {
             print("Error code: \(urlError.code.rawValue)")
             switch urlError.code {
             case .cannotFindHost:
-                throw WordPressError.networkError("Cannot find host. Check the URL and your network connection.")
+                if baseURL?.host?.hasSuffix(".local") == true {
+                    throw WordPressError.networkError("Cannot find .local domain. Ensure your local development server is running and DNS is configured correctly. For MAMP/XAMPP, check that the virtual host is set up properly.")
+                } else {
+                    throw WordPressError.networkError("Cannot find host. Check the URL and your network connection.")
+                }
             case .cannotConnectToHost:
                 throw WordPressError.networkError("Cannot connect to host. Make sure the server is running and accessible.")
             case .timedOut:
-                throw WordPressError.networkError("Connection timed out. Check your network or server status.")
+                if baseURL?.host?.hasSuffix(".local") == true {
+                    throw WordPressError.networkError("Connection timed out. Local development servers can be slow - try increasing server timeouts or check if the server is overloaded.")
+                } else {
+                    throw WordPressError.networkError("Connection timed out. Check your network or server status.")
+                }
             case .secureConnectionFailed:
-                throw WordPressError.networkError("SSL/TLS connection failed. For local development, ensure your certificate is valid.")
+                throw WordPressError.networkError("SSL/TLS connection failed. For local development, ensure your certificate is valid or use HTTP instead of HTTPS.")
+            case .dnsLookupFailed:
+                throw WordPressError.networkError("DNS lookup failed. Check your DNS settings and network configuration.")
             case .notConnectedToInternet:
                 throw WordPressError.networkError("No internet connection detected.")
             default:
