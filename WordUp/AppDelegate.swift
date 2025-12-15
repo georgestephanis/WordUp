@@ -193,11 +193,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     // Show the menu briefly to display authenticated state
                     if !popover.isShown {
                         if let button = statusItem.button {
-                            popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
-                            // Auto-hide after 3 seconds to show the authenticated state
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                                if self.popover.isShown {
-                                    self.popover.performClose(nil)
+                            DispatchQueue.main.async {
+                                self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
+                                // Auto-hide after 3 seconds to show the authenticated state
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                                    if self.popover.isShown {
+                                        self.popover.performClose(nil)
+                                    }
                                 }
                             }
                         }
@@ -225,7 +227,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             popover.performClose(sender)
         } else {
             if let button = statusItem.button {
-                popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
+                // Ensure no window focus issues when showing popover
+                DispatchQueue.main.async {
+                    self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
+                }
             }
         }
     }

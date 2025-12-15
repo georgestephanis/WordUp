@@ -85,11 +85,22 @@ struct ContentView: View {
         ]
         openPanel.title = "Select Files to Upload"
 
-        // Use completion handler instead of runModal for better reliability
-        openPanel.begin { response in
-            if response == .OK {
-                Task { @MainActor in
-                    await self.uploadFiles(Array(openPanel.urls))
+        // Use beginSheetModal to avoid window focus issues
+        if let window = NSApp.mainWindow ?? NSApp.windows.first {
+            openPanel.beginSheetModal(for: window) { response in
+                if response == .OK {
+                    Task { @MainActor in
+                        await self.uploadFiles(Array(openPanel.urls))
+                    }
+                }
+            }
+        } else {
+            // Fallback to regular modal if no suitable window
+            openPanel.begin { response in
+                if response == .OK {
+                    Task { @MainActor in
+                        await self.uploadFiles(Array(openPanel.urls))
+                    }
                 }
             }
         }
