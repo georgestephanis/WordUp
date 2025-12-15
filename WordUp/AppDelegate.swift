@@ -62,13 +62,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
             object: nil
         )
 
-        // Listen for screenshot notifications
-        NSWorkspace.shared.notificationCenter.addObserver(
-            self,
-            selector: #selector(screenshotTaken(_:)),
-            name: NSWorkspace.didTakeScreenshotNotification,
-            object: nil
-        )
+        // Note: Automatic screenshot detection is not available via public APIs
+        // Users must manually upload screenshots using drag & drop or the Upload Files button
     }
 
     @objc private func closePopoverForAuthorization() {
@@ -77,108 +72,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
         }
     }
 
-    @objc private func screenshotTaken(_ notification: Notification) {
-        // Only upload screenshots if user is authenticated
-        guard wordPressService.isAuthenticated else { return }
-
-        // Find the most recent screenshot file
-        if let screenshotURL = findLatestScreenshot() {
-            print("Detected screenshot: \(screenshotURL.path)")
-            Task {
-                await uploadScreenshot(screenshotURL)
-            }
-        }
-    }
-
-    private func findLatestScreenshot() -> URL? {
-        let fileManager = FileManager.default
-        let desktopURL = fileManager.urls(for: .desktopDirectory, in: .userDomainMask).first
-
-        guard let desktopURL = desktopURL else { return nil }
-
-        // Check both Desktop and Desktop/Screenshots directories
-        let possibleDirectories = [
-            desktopURL,
-            desktopURL.appendingPathComponent("Screenshots")
-        ]
-
-        var latestScreenshot: (url: URL, date: Date)?
-
-        for directory in possibleDirectories {
-            guard fileManager.fileExists(atPath: directory.path) else { continue }
-
-            do {
-                let contents = try fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.creationDateKey], options: [])
-
-                for url in contents {
-                    // Check if it's a screenshot file (common screenshot naming patterns)
-                    let filename = url.lastPathComponent.lowercased()
-                    if filename.hasPrefix("screenshot") ||
-                       filename.hasPrefix("screen shot") ||
-                       filename.contains("capture") {
-
-                        // Get creation date
-                        let attributes = try fileManager.attributesOfItem(atPath: url.path)
-                        if let creationDate = attributes[.creationDate] as? Date {
-                            // Check if this is more recent than our current latest
-                            if latestScreenshot == nil || creationDate > latestScreenshot!.date {
-                                // Additional check: file should be recent (within last 30 seconds)
-                                // to avoid uploading old screenshots
-                                if Date().timeIntervalSince(creationDate) < 30 {
-                                    latestScreenshot = (url, creationDate)
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch {
-                print("Error scanning directory \(directory.path): \(error)")
-            }
-        }
-
-        return latestScreenshot?.url
-    }
-
-    private func uploadScreenshot(_ screenshotURL: URL) async {
-        do {
-            let mediaURL = try await wordPressService.uploadFile(screenshotURL)
-            print("Screenshot uploaded successfully: \(mediaURL)")
-
-            // Copy the media URL to clipboard
-            let pasteboard = NSPasteboard.general
-            pasteboard.clearContents()
-            pasteboard.setString(mediaURL, forType: .string)
-
-            // Show success notification
-            do {
-                let content = UNMutableNotificationContent()
-                content.title = "Screenshot Uploaded"
-                content.body = "Media URL copied to clipboard"
-                content.sound = .default
-
-                let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-                try await UNUserNotificationCenter.current().add(request)
-            } catch {
-                print("Error showing notification: \(error.localizedDescription)")
-            }
-
-        } catch {
-            print("Failed to upload screenshot: \(error.localizedDescription)")
-
-            // Show error notification
-            do {
-                let content = UNMutableNotificationContent()
-                content.title = "Screenshot Upload Failed"
-                content.body = error.localizedDescription
-                content.sound = .default
-
-                let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-                try await UNUserNotificationCenter.current().add(request)
-            } catch {
-                print("Error showing notification: \(error.localizedDescription)")
-            }
-        }
-    }
+// Screenshot detection methods removed - not available via public APIs
 
     // MARK: - URL Scheme Handling
 
