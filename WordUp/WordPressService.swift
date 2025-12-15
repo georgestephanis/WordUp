@@ -321,7 +321,7 @@ class WordPressService: ObservableObject {
         var request = URLRequest(url: uploadURL)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("\(token)", forHTTPHeaderField: "Authorization")
         request.setValue("WordUp/1.0 API Client by George Stephanis", forHTTPHeaderField: "User-Agent")
 
         var body = Data()
