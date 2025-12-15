@@ -18,8 +18,9 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 8) {
             if wordPressService.isAuthenticated {
                 Button("Upload Files...") {
-                    // Close the popover before opening file picker to avoid modal conflicts
+                    // Ensure all modals are closed before opening file picker
                     showingAuthWindow = false
+                    showingSettings = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         openFilePicker()
                     }
@@ -28,6 +29,8 @@ struct ContentView: View {
                 Divider()
 
                 Button("Settings") {
+                    // Close any open modals before showing settings
+                    showingAuthWindow = false
                     showingSettings = true
                 }
             } else {
@@ -38,6 +41,8 @@ struct ContentView: View {
                 Divider()
 
                 Button("Authenticate") {
+                    // Close any open modals before showing auth
+                    showingSettings = false
                     showingAuthWindow = true
                 }
             }
