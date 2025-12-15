@@ -65,6 +65,15 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 
 _Note: Automatic screenshot detection is not available via macOS public APIs_
 
+### Settings
+
+Access connection details and account management:
+
+1. Click the WordUp menu bar icon
+2. Click "Settings"
+3. View connection details (site URL, username, status)
+4. Verify connection or sign out
+
 ### Features
 
 - **Supported Formats**: PNG, JPEG, GIF, WebP, SVG

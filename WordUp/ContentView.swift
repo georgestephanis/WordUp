@@ -12,28 +12,14 @@ import UserNotifications
 struct ContentView: View {
     @EnvironmentObject private var wordPressService: WordPressService
     @State private var showingAuthWindow = false
-    @State private var isVerifyingAuth = false
+    @State private var showingSettings = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if wordPressService.isAuthenticated {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Authenticated")
-                        .foregroundColor(.green)
-                        .font(.headline)
-
-                    if let url = wordPressService.authenticatedURL {
-                        Text("Site: \(url)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if let username = wordPressService.authenticatedUsername {
-                        Text("User: \(username)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
+                Text("Authenticated")
+                    .foregroundColor(.green)
+                    .font(.headline)
 
                 Divider()
 
@@ -41,22 +27,11 @@ struct ContentView: View {
                     openFilePicker()
                 }
 
-                Button(isVerifyingAuth ? "Verifying..." : "Verify Authentication") {
-                    Task {
-                        await verifyAuthentication()
-                    }
-                }
-                .disabled(isVerifyingAuth)
-
                 Button("Settings") {
-                    // Settings window will be implemented
+                    showingSettings = true
                 }
 
                 Divider()
-
-                Button("Sign Out") {
-                    wordPressService.signOut()
-                }
             } else {
                 Text("Not Authenticated")
                     .foregroundColor(.red)
@@ -81,6 +56,10 @@ struct ContentView: View {
             AuthenticationView()
                 .environmentObject(wordPressService)
         }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
+                .environmentObject(wordPressService)
+        }
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
             Task {
                 await handleFileDrop(providers: providers)
@@ -89,22 +68,6 @@ struct ContentView: View {
         }
     }
 
-    private func verifyAuthentication() async {
-        guard wordPressService.isAuthenticated else { return }
-
-        isVerifyingAuth = true
-        defer { isVerifyingAuth = false }
-
-        do {
-            try await wordPressService.verifyAuthentication()
-            // Success - authentication is still valid
-            print("Authentication verified successfully")
-        } catch {
-            print("Authentication verification failed: \(error.localizedDescription)")
-            // If verification fails, sign out the user
-            wordPressService.signOut()
-        }
-    }
 
     private func openFilePicker() {
         let openPanel = NSOpenPanel()
