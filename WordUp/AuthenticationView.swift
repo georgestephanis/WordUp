@@ -105,6 +105,9 @@ struct AuthenticationView: View {
                         name: NSNotification.Name("WordUpAuthorizationStarted"),
                         object: nil
                     )
+
+                    // Close the authentication sheet to return to main view
+                    dismiss()
                 }
 
                 // Show instructions to the user
