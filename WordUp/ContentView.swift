@@ -17,15 +17,11 @@ struct ContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if wordPressService.isAuthenticated {
-                Text("Authenticated")
-                    .foregroundColor(.green)
-                    .font(.headline)
-
-                Divider()
-
                 Button("Upload Files...") {
                     openFilePicker()
                 }
+
+                Divider()
 
                 Button("Settings") {
                     showingSettings = true
