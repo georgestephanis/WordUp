@@ -18,7 +18,11 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 8) {
             if wordPressService.isAuthenticated {
                 Button("Upload Files...") {
-                    openFilePicker()
+                    // Close the popover before opening file picker to avoid modal conflicts
+                    showingAuthWindow = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        openFilePicker()
+                    }
                 }
 
                 Divider()
@@ -76,11 +80,12 @@ struct ContentView: View {
         ]
         openPanel.title = "Select Files to Upload"
 
-        // Run the panel modally to ensure it works properly
-        let response = openPanel.runModal()
-        if response == .OK {
-            Task {
-                await uploadFiles(Array(openPanel.urls))
+        // Use completion handler instead of runModal for better reliability
+        openPanel.begin { response in
+            if response == .OK {
+                Task { @MainActor in
+                    await self.uploadFiles(Array(openPanel.urls))
+                }
             }
         }
     }

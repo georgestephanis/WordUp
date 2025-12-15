@@ -54,7 +54,7 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 **Method 2: Upload Files Button**
 
 1. Click the WordUp menu bar icon
-2. Click "Upload Files..." button
+2. Click "Upload Files..." button (menu closes automatically)
 3. Select image files from the file picker
 4. Files upload automatically and URLs are copied to clipboard
 
