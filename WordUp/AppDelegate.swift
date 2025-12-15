@@ -141,8 +141,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
                     password: password
                 )
 
+                await showNotification(title: "Authentication Successful", body: "Connected to \(siteURL)")
+
                 await MainActor.run {
-                    await showNotification(title: "Authentication Successful", body: "Connected to \(siteURL)")
                     // Close any open authentication windows
                     if let window = NSApp.windows.first(where: { $0.title.contains("Authentication") }) {
                         window.close()
@@ -216,9 +217,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
     private func uploadFile(_ fileURL: URL) async {
         guard self.wordPressService.isAuthenticated else {
             // Show notification that user needs to authenticate
-            await MainActor.run {
-                self.showNotification(title: "Not Authenticated", body: "Please authenticate first in the menu.")
-            }
+            await self.showNotification(title: "Not Authenticated", body: "Please authenticate first in the menu.")
             return
         }
 
@@ -226,12 +225,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSDraggingDestination {
             let mediaURL = try await self.wordPressService.uploadFile(fileURL)
             await MainActor.run {
                 self.copyToClipboard(mediaURL)
-                await self.showNotification(title: "Upload Successful", body: "Media URL copied to clipboard")
             }
+            await self.showNotification(title: "Upload Successful", body: "Media URL copied to clipboard")
         } catch {
-            await MainActor.run {
-                await self.showNotification(title: "Upload Failed", body: error.localizedDescription)
-            }
+            await self.showNotification(title: "Upload Failed", body: error.localizedDescription)
         }
     }
 
