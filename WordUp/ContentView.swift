@@ -113,11 +113,11 @@ struct ContentView: View {
         ]
         openPanel.title = "Select Files to Upload"
 
-        openPanel.begin { result in
-            if result == .OK {
-                Task {
-                    await uploadFiles(Array(openPanel.urls))
-                }
+        // Run the panel modally to ensure it works properly
+        let response = openPanel.runModal()
+        if response == .OK {
+            Task {
+                await uploadFiles(Array(openPanel.urls))
             }
         }
     }
