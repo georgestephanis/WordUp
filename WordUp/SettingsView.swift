@@ -129,7 +129,7 @@ struct SettingsView: View {
                 .keyboardShortcut(.escape, modifiers: [])
             }
         }
-        .frame(width: 400, height: 350)
+        .frame(width: 400, height: 460)
         .padding()
         .sheet(isPresented: $showingLogs) {
             LogsView()
