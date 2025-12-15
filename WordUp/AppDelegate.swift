@@ -25,7 +25,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "square.and.arrow.up.fill", accessibilityDescription: "WordUp")
+        statusItem.button?.image = createCustomIcon()
 
         // Set up button action for clicks
         statusItem.button?.target = self
@@ -33,6 +33,50 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Note: Drag-and-drop is handled by opening the popover when dragging valid files
         // The ContentView in the popover handles the actual drop operation
+    }
+
+    private func createCustomIcon() -> NSImage {
+        let size = NSSize(width: 18, height: 18)
+        let image = NSImage(size: size)
+
+        image.lockFocus()
+
+        // Create a circle outline with "W"
+        let circleRect = NSRect(x: 0, y: 0, width: 14, height: 14)
+        let circlePath = NSBezierPath(ovalIn: circleRect)
+
+        // Set circle outline color (WordPress blue-ish)
+        NSColor.systemBlue.setStroke()
+        circlePath.lineWidth = 1.5
+        circlePath.stroke()
+
+        // Draw "W" text
+        let wRect = NSRect(x: 2, y: 1, width: 10, height: 12)
+        let wString = NSAttributedString(string: "W", attributes: [
+            .font: NSFont.boldSystemFont(ofSize: 10),
+            .foregroundColor: NSColor.systemBlue
+        ])
+        wString.draw(in: wRect)
+
+        // Draw upward arrow further to the right (moved from x:15 to x:16)
+        let arrowPath = NSBezierPath()
+        // Arrow shaft - moved right and made bolder
+        arrowPath.move(to: NSPoint(x: 16, y: 4))
+        arrowPath.line(to: NSPoint(x: 16, y: 12))
+        // Arrow head - adjusted for new position
+        arrowPath.line(to: NSPoint(x: 14, y: 10))
+        arrowPath.move(to: NSPoint(x: 16, y: 12))
+        arrowPath.line(to: NSPoint(x: 18, y: 10))
+
+        // Green color to indicate website connection
+        NSColor.systemGreen.setStroke()
+        arrowPath.lineWidth = 2.0 // Made bolder
+        arrowPath.stroke()
+
+        image.unlockFocus()
+
+        image.isTemplate = true // Makes it adapt to menu bar appearance
+        return image
     }
 
     private func setupPopover() {
