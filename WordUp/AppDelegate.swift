@@ -10,9 +10,11 @@ import SwiftUI
 import UniformTypeIdentifiers
 import UserNotifications
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSMetadataQueryDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
+    private var screenshotQuery: NSMetadataQuery?
+    private var processedScreenshots = Set<URL>()
     private let wordPressService = WordPressService()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -108,8 +110,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
-        // Note: Automatic screenshot detection is not available via public APIs
-        // Users must manually upload screenshots using drag & drop or the Upload Files button
+        setupScreenshotMonitoring()
     }
 
     @objc private func closePopoverForAuthorization() {
@@ -118,7 +119,72 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-// Screenshot detection methods removed - not available via public APIs
+// MARK: - Screenshot Monitoring
+
+    private func setupScreenshotMonitoring() {
+        // Monitor for screenshot files using Spotlight metadata
+        screenshotQuery = NSMetadataQuery()
+        screenshotQuery?.delegate = self
+        screenshotQuery?.predicate = NSPredicate(format: "kMDItemIsScreenCapture = 1")
+
+        // Only monitor user directory to avoid system files
+        let userURL = FileManager.default.urls(for: .userDirectory, in: .userDomainMask).first
+        if let userURL = userURL {
+            screenshotQuery?.searchScopes = [userURL]
+        }
+
+        // Start monitoring
+        screenshotQuery?.start()
+
+        print("Started monitoring for screenshots using Spotlight metadata")
+    }
+
+    // MARK: - NSMetadataQueryDelegate
+
+    func metadataQuery(_ query: NSMetadataQuery, didUpdate results: [NSMetadataItem], resultChange: [Any]) {
+        // Check all current results for new screenshots
+        for item in results {
+            if let fileURL = item.value(forAttribute: NSMetadataItemURLKey) as? URL {
+                handleNewScreenshot(at: fileURL)
+            }
+        }
+    }
+
+    private func handleNewScreenshot(at url: URL) {
+        // Skip if we've already processed this screenshot
+        guard !processedScreenshots.contains(url) else {
+            return
+        }
+
+        // Only upload screenshots if user is authenticated
+        guard wordPressService.isAuthenticated else {
+            print("Screenshot detected but user not authenticated - skipping upload")
+            return
+        }
+
+        // Check if this is a recent screenshot (created within last 10 seconds)
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            if let creationDate = attributes[.creationDate] as? Date {
+                let timeSinceCreation = Date().timeIntervalSince(creationDate)
+                if timeSinceCreation > 10.0 {
+                    // Skip old screenshots
+                    return
+                }
+            }
+        } catch {
+            print("Could not check screenshot creation date: \(error)")
+            return
+        }
+
+        // Mark as processed and upload
+        processedScreenshots.insert(url)
+        print("Auto-uploading screenshot: \(url.path)")
+
+        Task {
+            await uploadFile(url)
+        }
+    }
 
     // MARK: - URL Scheme Handling
 
