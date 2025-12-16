@@ -14,6 +14,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMetadataQueryDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
     private var screenshotQuery: NSMetadataQuery?
+    private var screenshotCheckTimer: Timer?
     private var processedScreenshots = Set<URL>()
     private let wordPressService = WordPressService()
 
@@ -144,10 +145,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMetadataQueryDelegate {
         screenshotQuery?.notificationBatchingInterval = 0.1
         screenshotQuery?.operationQueue = .main
 
-        // Start monitoring
-        screenshotQuery?.start()
-
-        // Also set up notification observer for additional reliability
+        // Set up notification observers BEFORE starting the query
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(metadataQueryDidFinishGathering(_:)),
@@ -155,43 +153,120 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMetadataQueryDelegate {
             object: screenshotQuery
         )
 
-        print("Started monitoring for screenshots using Spotlight metadata")
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(metadataQueryDidUpdate(_:)),
+            name: NSNotification.Name.NSMetadataQueryDidUpdate,
+            object: screenshotQuery
+        )
+
+        // Start monitoring
+        screenshotQuery?.start()
+
+        print("✅ Started monitoring for screenshots using Spotlight metadata")
         print("Monitoring paths: \(searchScopes.map { $0.path })")
+        print("Query predicate: kMDItemIsScreenCapture = 1")
+        print("Query is running: \(screenshotQuery?.isStarted ?? false)")
+
+        // Set up periodic manual check as fallback (every 5 seconds)
+        // This helps catch screenshots before Spotlight indexes them
+        screenshotCheckTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.manuallyCheckForRecentScreenshots()
+        }
+
+        // Initial manual check after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            self.manuallyCheckForRecentScreenshots()
+        }
     }
 
     @objc private func metadataQueryDidFinishGathering(_ notification: Notification) {
         print("Metadata query finished initial gathering. Found \(screenshotQuery?.resultCount ?? 0) existing screenshots")
+        processQueryResults()
+    }
 
-        // Process any existing screenshots that match our criteria
-        if let results = screenshotQuery?.results as? [NSMetadataItem] {
-            for item in results {
-                if let fileURL = item.value(forAttribute: NSMetadataItemURLKey) as? URL {
-                    handleNewScreenshot(at: fileURL)
+    @objc private func metadataQueryDidUpdate(_ notification: Notification) {
+        print("Metadata query updated. Current result count: \(screenshotQuery?.resultCount ?? 0)")
+        processQueryResults()
+    }
+
+    private func processQueryResults() {
+        guard let query = screenshotQuery else { return }
+
+        // Get all current results
+        let resultCount = query.resultCount
+        print("Processing \(resultCount) screenshot results")
+
+        // Process each result
+        for i in 0..<resultCount {
+            if let item = query.result(at: i) as? NSMetadataItem,
+               let fileURL = item.value(forAttribute: NSMetadataItemURLKey) as? URL {
+                handleNewScreenshot(at: fileURL)
+            }
+        }
+    }
+
+    private func manuallyCheckForRecentScreenshots() {
+        // Fallback: Manually check Desktop for recent screenshot files
+        guard let desktopURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first else {
+            return
+        }
+
+        do {
+            let files = try FileManager.default.contentsOfDirectory(
+                at: desktopURL,
+                includingPropertiesForKeys: [.creationDateKey, .contentModificationDateKey],
+                options: [.skipsHiddenFiles]
+            )
+
+            let recentFiles = files.filter { url in
+                let filename = url.lastPathComponent.lowercased()
+                guard filename.hasPrefix("screenshot") || filename.hasPrefix("screen shot") else {
+                    return false
+                }
+
+                // Check if file was created/modified in last 60 seconds
+                if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+                   let modDate = attrs[.modificationDate] as? Date {
+                    let timeSinceMod = Date().timeIntervalSince(modDate)
+                    return timeSinceMod <= 60.0
+                }
+                return false
+            }
+
+            if !recentFiles.isEmpty {
+                print("Manual check found \(recentFiles.count) recent screenshot(s)")
+                for url in recentFiles {
+                    handleNewScreenshot(at: url)
                 }
             }
+        } catch {
+            print("Error manually checking for screenshots: \(error)")
         }
     }
 
     // MARK: - NSMetadataQueryDelegate
 
     func metadataQuery(_ query: NSMetadataQuery, didUpdate results: [NSMetadataItem], resultChange: [Any]) {
-        print("Metadata query updated with \(results.count) results")
-
-        // Check all current results for new screenshots
-        for item in results {
-            if let fileURL = item.value(forAttribute: NSMetadataItemURLKey) as? URL {
-                handleNewScreenshot(at: fileURL)
-            }
-        }
+        // This delegate method is called, but we also use notifications for reliability
+        print("NSMetadataQueryDelegate didUpdate called with \(results.count) results")
+        processQueryResults()
     }
 
     private func handleNewScreenshot(at url: URL) {
         // Skip if we've already processed this screenshot
         guard !processedScreenshots.contains(url) else {
+            print("Screenshot already processed: \(url.path)")
             return
         }
 
         print("Detected potential screenshot: \(url.path)")
+
+        // Verify file exists
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            print("Screenshot file doesn't exist: \(url.path)")
+            return
+        }
 
         // Only upload screenshots if user is authenticated
         guard wordPressService.isAuthenticated else {
@@ -199,22 +274,32 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMetadataQueryDelegate {
             return
         }
 
-        // Check if this is a recent screenshot (created within last 30 seconds to account for Spotlight indexing delay)
+        // Check if this is a recent screenshot (created within last 60 seconds to account for Spotlight indexing delay)
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
             if let creationDate = attributes[.creationDate] as? Date {
                 let timeSinceCreation = Date().timeIntervalSince(creationDate)
-                print("Screenshot created \(timeSinceCreation) seconds ago")
+                print("Screenshot created \(String(format: "%.1f", timeSinceCreation)) seconds ago")
 
-                if timeSinceCreation > 30.0 {
+                if timeSinceCreation > 60.0 {
                     // Skip old screenshots
-                    print("Skipping old screenshot")
+                    print("Skipping old screenshot (older than 60 seconds)")
                     return
+                }
+            } else {
+                // If we can't get creation date, use modification date as fallback
+                if let modDate = attributes[.modificationDate] as? Date {
+                    let timeSinceMod = Date().timeIntervalSince(modDate)
+                    print("Using modification date - file modified \(String(format: "%.1f", timeSinceMod)) seconds ago")
+                    if timeSinceMod > 60.0 {
+                        print("Skipping old screenshot (modified more than 60 seconds ago)")
+                        return
+                    }
                 }
             }
         } catch {
-            print("Could not check screenshot creation date: \(error)")
-            return
+            print("Could not check screenshot date: \(error)")
+            // Don't return - try to proceed anyway
         }
 
         // Double-check that this is actually a screenshot by checking the filename
@@ -226,7 +311,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMetadataQueryDelegate {
 
         // Mark as processed and upload
         processedScreenshots.insert(url)
-        print("Auto-uploading screenshot: \(url.path)")
+        print("✅ Auto-uploading screenshot: \(url.path)")
 
         Task {
             await uploadFile(url)
