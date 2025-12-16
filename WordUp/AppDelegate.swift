@@ -33,7 +33,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Add drag view for direct drag-and-drop on the icon
         if let button = statusItem.button {
-            let dragView = DraggableStatusView(frame: button.bounds)
+            let dragView = DraggableStatusView(frame: button.bounds, appDelegate: self)
             dragView.autoresizingMask = [.width, .height]
             button.addSubview(dragView)
         }
@@ -241,7 +241,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // Drag-and-drop is handled via ContentView.onDrop when the popover is open
 
-    private func uploadFile(_ fileURL: URL) async {
+    public func uploadFile(_ fileURL: URL) async {
         guard self.wordPressService.isAuthenticated else {
             // Show notification that user needs to authenticate
             await self.showNotification(title: "Not Authenticated", body: "Please authenticate first in the menu.")
@@ -284,6 +284,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 class DraggableStatusView: NSView {
     weak var appDelegate: AppDelegate?
+
+    init(frame frameRect: NSRect, appDelegate: AppDelegate) {
+        self.appDelegate = appDelegate
+        super.init(frame: frameRect)
+        setup()
+    }
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -330,7 +336,9 @@ class DraggableStatusView: NSView {
             if !validUrls.isEmpty {
                 Task {
                     for url in validUrls {
-                        await (NSApp.delegate as? AppDelegate)?.uploadFile(url)
+                        if let appDelegate = appDelegate {
+                            await appDelegate.uploadFile(url)
+                        }
                     }
                 }
                 return true
