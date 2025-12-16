@@ -12,6 +12,7 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 - **Modern Notifications**: Uses macOS UserNotifications framework with async/await (no deprecated APIs)
 - **API Logging**: Complete request/response logging with searchable log viewer
 - **Custom Menu Icon**: Distinctive "W" in blue circle outline with bold green upward arrow indicating WordPress connectivity and uploads
+- **Smart Popover Dismissal**: Menus automatically close when clicking elsewhere on screen
 - **Custom User-Agent**: Identifies requests with "WordUp/1.0 API Client by George Stephanis"
 
 ## Requirements

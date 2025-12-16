@@ -86,7 +86,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupPopover() {
         popover = NSPopover()
         popover.contentSize = NSSize(width: 200, height: 300)
-        popover.behavior = .transient
+        popover.behavior = .semitransient  // More responsive dismissal when clicking outside
+        popover.animates = true
         popover.contentViewController = NSHostingController(rootView: ContentView().environmentObject(wordPressService))
     }
 
