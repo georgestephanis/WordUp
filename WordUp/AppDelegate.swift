@@ -127,21 +127,56 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMetadataQueryDelegate {
         screenshotQuery?.delegate = self
         screenshotQuery?.predicate = NSPredicate(format: "kMDItemIsScreenCapture = 1")
 
-        // Only monitor user directory to avoid system files
-        let userURL = FileManager.default.urls(for: .userDirectory, in: .userDomainMask).first
-        if let userURL = userURL {
-            screenshotQuery?.searchScopes = [userURL]
+        // Set search scopes to Desktop and Desktop/Screenshots for better targeting
+        let fileManager = FileManager.default
+        let desktopURL = fileManager.urls(for: .desktopDirectory, in: .userDomainMask).first
+        var searchScopes: [URL] = []
+
+        if let desktopURL = desktopURL {
+            searchScopes.append(desktopURL)
+            let screenshotsURL = desktopURL.appendingPathComponent("Screenshots")
+            searchScopes.append(screenshotsURL)
         }
+
+        screenshotQuery?.searchScopes = searchScopes
+
+        // Configure for live updates and notifications
+        screenshotQuery?.notificationBatchingInterval = 0.1
+        screenshotQuery?.operationQueue = .main
 
         // Start monitoring
         screenshotQuery?.start()
 
+        // Also set up notification observer for additional reliability
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(metadataQueryDidFinishGathering(_:)),
+            name: NSNotification.Name.NSMetadataQueryDidFinishGathering,
+            object: screenshotQuery
+        )
+
         print("Started monitoring for screenshots using Spotlight metadata")
+        print("Monitoring paths: \(searchScopes.map { $0.path })")
+    }
+
+    @objc private func metadataQueryDidFinishGathering(_ notification: Notification) {
+        print("Metadata query finished initial gathering. Found \(screenshotQuery?.resultCount ?? 0) existing screenshots")
+
+        // Process any existing screenshots that match our criteria
+        if let results = screenshotQuery?.results as? [NSMetadataItem] {
+            for item in results {
+                if let fileURL = item.value(forAttribute: NSMetadataItemURLKey) as? URL {
+                    handleNewScreenshot(at: fileURL)
+                }
+            }
+        }
     }
 
     // MARK: - NSMetadataQueryDelegate
 
     func metadataQuery(_ query: NSMetadataQuery, didUpdate results: [NSMetadataItem], resultChange: [Any]) {
+        print("Metadata query updated with \(results.count) results")
+
         // Check all current results for new screenshots
         for item in results {
             if let fileURL = item.value(forAttribute: NSMetadataItemURLKey) as? URL {
@@ -156,24 +191,36 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMetadataQueryDelegate {
             return
         }
 
+        print("Detected potential screenshot: \(url.path)")
+
         // Only upload screenshots if user is authenticated
         guard wordPressService.isAuthenticated else {
             print("Screenshot detected but user not authenticated - skipping upload")
             return
         }
 
-        // Check if this is a recent screenshot (created within last 10 seconds)
+        // Check if this is a recent screenshot (created within last 30 seconds to account for Spotlight indexing delay)
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
             if let creationDate = attributes[.creationDate] as? Date {
                 let timeSinceCreation = Date().timeIntervalSince(creationDate)
-                if timeSinceCreation > 10.0 {
+                print("Screenshot created \(timeSinceCreation) seconds ago")
+
+                if timeSinceCreation > 30.0 {
                     // Skip old screenshots
+                    print("Skipping old screenshot")
                     return
                 }
             }
         } catch {
             print("Could not check screenshot creation date: \(error)")
+            return
+        }
+
+        // Double-check that this is actually a screenshot by checking the filename
+        let filename = url.lastPathComponent.lowercased()
+        guard filename.hasPrefix("screenshot") || filename.hasPrefix("screen shot") else {
+            print("Filename doesn't match screenshot pattern: \(filename)")
             return
         }
 

@@ -66,7 +66,7 @@ _Alternative: You can also click the icon to open the menu and drag files into t
 2. WordUp automatically detects and uploads the screenshot to WordPress using Spotlight metadata
 3. Media URL is copied to your clipboard
 
-_Note: Requires authentication to enable automatic uploads_
+_Note: Requires authentication and Spotlight indexing to be enabled for automatic uploads_
 
 ### Settings
 
