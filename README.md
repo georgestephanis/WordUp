@@ -43,15 +43,14 @@ A macOS menu bar app for uploading files and screenshots to self-hosted WordPres
 
 ### File Upload Methods
 
-**Method 1: Drag & Drop to Menu**
+**Method 1: Direct Drag & Drop to Icon**
 
 1. Take a screenshot or select any image file
-2. Drag the file toward the WordUp menu bar icon
-3. The menu automatically opens to show the drop target
-4. Drop the file on the menu content
-5. The file uploads automatically and the media URL is copied to your clipboard
+2. Drag the file directly onto the WordUp menu bar icon
+3. Drop the file - no menus or windows needed
+4. The file uploads automatically and the media URL is copied to your clipboard
 
-*Note: Direct drag-and-drop onto menu bar icons isn't supported by macOS. The menu opens automatically to provide a drop target.*
+*Alternative: You can also click the icon to open the menu and drag files into the interface*
 
 **Method 2: Upload Files Button**
 

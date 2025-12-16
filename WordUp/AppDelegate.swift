@@ -31,8 +31,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.target = self
         statusItem.button?.action = #selector(togglePopover(_:))
 
-        // Note: Drag-and-drop is handled by opening the popover when dragging valid files
-        // The ContentView in the popover handles the actual drop operation
+        // Add drag view for direct drag-and-drop on the icon
+        if let button = statusItem.button {
+            let dragView = DraggableStatusView(frame: button.bounds)
+            dragView.autoresizingMask = [.width, .height]
+            button.addSubview(dragView)
+        }
     }
 
     private func createCustomIcon() -> NSImage {
@@ -273,6 +277,73 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } catch {
             print("Error showing notification: \(error.localizedDescription)")
         }
+    }
+}
+
+// MARK: - Draggable Status View
+
+class DraggableStatusView: NSView {
+    weak var appDelegate: AppDelegate?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    private func setup() {
+        // Register for file URL drag types
+        registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
+
+        // Make sure we don't interfere with button clicks
+        // The superview (status item button) will handle clicks
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        let pasteboard = sender.draggingPasteboard
+        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL] {
+            // Check if any of the URLs are valid upload files
+            let validFiles = urls.filter { isValidUploadFile($0) }
+            return validFiles.isEmpty ? [] : .copy
+        }
+        return []
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        let pasteboard = sender.draggingPasteboard
+        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL] {
+            let validFiles = urls.filter { isValidUploadFile($0) }
+            return validFiles.isEmpty ? [] : .copy
+        }
+        return []
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let pasteboard = sender.draggingPasteboard
+
+        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL] {
+            let validUrls = urls.filter { isValidUploadFile($0) }
+            if !validUrls.isEmpty {
+                Task {
+                    for url in validUrls {
+                        await (NSApp.delegate as? AppDelegate)?.uploadFile(url)
+                    }
+                }
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private func isValidUploadFile(_ url: URL) -> Bool {
+        let supportedExtensions = ["png", "jpg", "jpeg", "gif", "webp", "svg"]
+        let fileExtension = url.pathExtension.lowercased()
+        return supportedExtensions.contains(fileExtension) && url.isFileURL
     }
 }
 
