@@ -1,0 +1,55 @@
+{
+  "fill" : {
+    "automatic-gradient" : "extended-srgb:0.00000,0.47843,1.00000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "fill" : {
+            "solid" : "extended-srgb:0.15686,0.80392,0.25490,1.00000"
+          },
+          "glass" : true,
+          "image-name" : "arrow_shape_up_24dp_E3E3E3_FILL1_wght400_GRAD0_opsz24.svg",
+          "name" : "arrow_shape_up_24dp_E3E3E3_FILL1_wght400_GRAD0_opsz24",
+          "position" : {
+            "scale" : 42,
+            "translation-in-points" : [
+              364.3359375,
+              -90.6484375
+            ]
+          }
+        },
+        {
+          "fill" : {
+            "solid" : "extended-gray:1.00000,1.00000"
+          },
+          "image-name" : "wordpress-logo-simplified-cmyk-1.svg",
+          "name" : "wordpress-logo-simplified-cmyk-1",
+          "position" : {
+            "scale" : 24,
+            "translation-in-points" : [
+              -335.8984375,
+              182.9921875
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		FF9C3A292EF1CACD00272954 /* WordUp.icon in Resources */ = {isa = PBXBuildFile; fileRef = FF9C3A282EF1CACD00272954 /* WordUp.icon */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		FF8EFF932EE363990018C9F5 /* WordUp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WordUp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FF9C3A282EF1CACD00272954 /* WordUp.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = WordUp.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -47,6 +52,7 @@
 			children = (
 				FF8EFF952EE363990018C9F5 /* WordUp */,
 				FF8EFF942EE363990018C9F5 /* Products */,
+				FF9C3A282EF1CACD00272954 /* WordUp.icon */,
 			);
 			sourceTree = "<group>";
 		};
@@ -122,6 +128,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FF9C3A292EF1CACD00272954 /* WordUp.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -265,7 +272,7 @@
 		FF8EFF9F2EE3639A0018C9F5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = WordUp;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -298,7 +305,7 @@
 		FF8EFFA02EE3639A0018C9F5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = WordUp;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
