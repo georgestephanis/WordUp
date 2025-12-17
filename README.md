@@ -2,6 +2,16 @@
 
 A macOS menu bar app for uploading files and screenshots to self-hosted WordPress sites.
 
+## License
+
+All code in this repository, to [the extent that it is copyrightable](https://www.copyright.gov/ai/) (being partially created via LLM generation) is made available through the same GPL license through which WordPress is distributed.
+
+The WordUp project is non-commercial in nature, being available for free, and is released with the hope of being useful to people and helping to promote the spread and improvement of the WordPress software.
+
+It is a project by [George Stephanis](https://georgestephanis.wordpress.com/resume/), the same guy who [advocated for and got Application Passwords included in WordPress Core](https://make.wordpress.org/core/2020/11/05/application-passwords-integration-guide/), which this project leverages for authentication. The WordUp project is _not_ created by, endorsed, or supported by the WordPress Foundation, Automattic, or the WordPress Open Source Project.
+
+As such, it falls under the [Trademark Usage Policy from the WordPress Foundation](https://wordpressfoundation.org/trademark-policy/) for its usage of the WordPress name and logo.
+
 ## Features
 
 - **Menu Bar Integration**: Lives in the macOS menu bar for quick access (works properly in multi-monitor setups)
