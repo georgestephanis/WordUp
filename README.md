@@ -18,7 +18,7 @@ As such, it falls under the [Trademark Usage Policy from the WordPress Foundatio
 - **WordPress Authentication**: Uses Application Passwords for secure authentication
 - **Drag & Drop Upload**: Simply drag files or screenshots onto the menu bar icon
 - **Automatic Clipboard**: Uploaded media URLs are automatically copied to clipboard
-- **Local Token Storage**: Securely stores authentication tokens locally
+- **Keychain Token Storage**: Stores your application password in the macOS Keychain
 - **Modern Notifications**: Uses macOS UserNotifications framework with async/await (no deprecated APIs)
 - **API Logging**: Complete request/response logging with searchable log viewer
 - **Custom Menu Icon**: Distinctive "W" in blue circle outline with bold green upward arrow indicating WordPress connectivity and uploads
@@ -27,10 +27,24 @@ As such, it falls under the [Trademark Usage Policy from the WordPress Foundatio
 
 ## Requirements
 
-- macOS 13.0 or later
+- macOS 15.6 or later (Apple Silicon or Intel)
 - Self-hosted WordPress site with REST API enabled (supports local development domains like .local)
 - WordPress Application Password
 - **For screenshot uploads**: Drag screenshot files from Desktop/Screenshots folder
+
+## Download
+
+Get `WordUp-<version>-macOS.zip` from the [latest release](https://github.com/georgestephanis/WordUp/releases/latest), unzip it, and move `WordUp.app` to Applications.
+
+The app is not notarized by Apple, so the first launch is blocked. To allow it once:
+
+1. Open WordUp. macOS says Apple could not verify that WordUp is free of malware; click **Done**.
+2. Open **System Settings › Privacy & Security**, scroll down, and click **Open Anyway** next to the WordUp message.
+3. Open WordUp again, click **Open Anyway** in the dialog, and enter your Mac password. After that it opens normally.
+
+Or, from Terminal: `xattr -dr com.apple.quarantine /Applications/WordUp.app`
+
+To build it yourself instead, open `WordUp.xcodeproj` in Xcode and run the `WordUp` scheme.
 
 ## Setup
 
