@@ -27,10 +27,23 @@ As such, it falls under the [Trademark Usage Policy from the WordPress Foundatio
 
 ## Requirements
 
-- macOS 13.0 or later
+- macOS 15.6 or later (Apple Silicon or Intel)
 - Self-hosted WordPress site with REST API enabled (supports local development domains like .local)
 - WordPress Application Password
 - **For screenshot uploads**: Drag screenshot files from Desktop/Screenshots folder
+
+## Download
+
+Get `WordUp-<version>-macOS.zip` from the [latest release](https://github.com/georgestephanis/WordUp/releases/latest), unzip it, and move `WordUp.app` to Applications.
+
+The app is not notarized by Apple, so the first launch is blocked. To allow it once:
+
+1. Open WordUp. macOS says it can't verify the developer; click **Done**.
+2. Open **System Settings › Privacy & Security**, scroll down, and click **Open Anyway** next to the WordUp message.
+
+Or, from Terminal: `xattr -dr com.apple.quarantine /Applications/WordUp.app`
+
+To build it yourself instead, open `WordUp.xcodeproj` in Xcode and run the `WordUp` scheme.
 
 ## Setup
 
