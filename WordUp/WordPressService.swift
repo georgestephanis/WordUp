@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import Security
 
 class WordPressService: ObservableObject {
     @Published var isAuthenticated: Bool = false
@@ -44,7 +45,14 @@ class WordPressService: ObservableObject {
         }
 
         username = defaults.string(forKey: usernameKey)
-        token = defaults.string(forKey: tokenKey)
+        token = Keychain.read(account: tokenKey)
+        // Move a token saved in plain text by older versions into the Keychain.
+        if token == nil, let legacy = defaults.string(forKey: tokenKey) {
+            if Keychain.save(legacy, account: tokenKey) {
+                defaults.removeObject(forKey: tokenKey)
+            }
+            token = legacy
+        }
 
         isAuthenticated = token != nil && baseURL != nil && username != nil
     }
@@ -333,7 +341,12 @@ class WordPressService: ObservableObject {
         let defaults = UserDefaults.standard
         defaults.set(baseURL?.absoluteString, forKey: baseURLKey)
         defaults.set(username, forKey: usernameKey)
-        defaults.set(token, forKey: tokenKey)
+        if let token {
+            _ = Keychain.save(token, account: tokenKey)
+        } else {
+            Keychain.delete(account: tokenKey)
+        }
+        defaults.removeObject(forKey: tokenKey)
     }
 
     func signOut() {
@@ -341,6 +354,7 @@ class WordPressService: ObservableObject {
         defaults.removeObject(forKey: baseURLKey)
         defaults.removeObject(forKey: usernameKey)
         defaults.removeObject(forKey: tokenKey)
+        Keychain.delete(account: tokenKey)
 
         baseURL = nil
         username = nil
@@ -479,4 +493,46 @@ enum WordPressError: Error {
     case uploadFailed
     case invalidResponse
     case networkError(String)
+}
+
+/// Minimal wrapper for storing the application password as a generic
+/// password item in the user's login Keychain.
+private enum Keychain {
+    private static let service = "com.georgestephanis.WordUp"
+
+    private static func baseQuery(account: String) -> [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
+    }
+
+    @discardableResult
+    static func save(_ value: String, account: String) -> Bool {
+        let data = Data(value.utf8)
+        let query = baseQuery(account: account)
+        let status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+        if status == errSecItemNotFound {
+            var add = query
+            add[kSecValueData as String] = data
+            add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+            return SecItemAdd(add as CFDictionary, nil) == errSecSuccess
+        }
+        return status == errSecSuccess
+    }
+
+    static func read(account: String) -> String? {
+        var query = baseQuery(account: account)
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        var result: AnyObject?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+              let data = result as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    static func delete(account: String) {
+        SecItemDelete(baseQuery(account: account) as CFDictionary)
+    }
 }
