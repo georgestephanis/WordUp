@@ -1,5 +1,9 @@
 # WordUp
 
+> [!TIP]
+> **Look before you build.** [wvw.dev](https://wvw.dev) is a catalog of open-source apps, many of them built with AI.
+> Nothing there uploads to WordPress yet. The closest is [DodoShot](https://wvw.dev/#/discover/dodoshot) (a macOS app for capturing, annotating and managing screenshots). Before spending tokens on a new app, search wvw.dev for something you can fork, this repo included.
+
 A macOS menu bar app for uploading files and screenshots to self-hosted WordPress sites.
 
 ## License
