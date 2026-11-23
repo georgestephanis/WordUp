@@ -1,8 +1,13 @@
 # WordUp
 
 > [!TIP]
-> **Look before you build.** [wvw.dev](https://wvw.dev) is a catalog of open-source apps, many of them built with AI.
-> Nothing there uploads to WordPress yet. The closest is [DodoShot](https://wvw.dev/#/discover/dodoshot) (a macOS app for capturing, annotating and managing screenshots). Before spending tokens on a new app, search wvw.dev for something you can fork, this repo included.
+> **Look before you build.** Similar open-source projects:
+>
+> - [uPic](https://github.com/gee1k/uPic): macOS image and file uploader for many hosts, Apache-2.0
+> - [PicGo](https://github.com/Molunerfinn/PicGo): desktop image uploader, MIT
+> - [ShareX](https://github.com/ShareX/ShareX): Windows capture and upload tool with custom uploaders, GPL-3.0
+>
+> Before building your own tool, search [AlternativeTo](https://alternativeto.net) (filter to open source), [GitHub](https://github.com/search?type=repositories) and [wvw.dev](https://wvw.dev) for something to fork, this repo included.
 
 A macOS menu bar app for uploading files and screenshots to self-hosted WordPress sites.
 
