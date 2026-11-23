@@ -1,5 +1,14 @@
 # WordUp
 
+> [!TIP]
+> **Look before you build.** Similar open-source projects:
+>
+> - [uPic](https://github.com/gee1k/uPic): macOS image and file uploader for many hosts, Apache-2.0
+> - [PicGo](https://github.com/Molunerfinn/PicGo): desktop image uploader, MIT
+> - [ShareX](https://github.com/ShareX/ShareX): Windows capture and upload tool with custom uploaders, GPL-3.0
+>
+> Before building your own tool, search [AlternativeTo](https://alternativeto.net) (filter to open source), [GitHub](https://github.com/search?type=repositories) and [wvw.dev](https://wvw.dev) for something to fork, this repo included.
+
 A macOS menu bar app for uploading files and screenshots to self-hosted WordPress sites.
 
 ## License
